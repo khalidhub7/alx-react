@@ -8,11 +8,11 @@ const button = document.createElement('button');
 const p3 = document.createElement('p');
 const p4 = document.createElement('p');
 
-p1.innerHTML = "Holberton Dashboard";
+p1.innerHTML = "ALX Dashboard";
 p2.innerHTML = "Dashboard data for the students";
 button.innerHTML = "Click here to get started";
 p3.setAttribute('id', 'count');
-p4.innerHTML = "Copyright - Holberton School";
+p4.innerHTML = "Copyright - ALX";
 
 body.append(p1, p2, button, p3, p4)
 
