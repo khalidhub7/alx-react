@@ -20,7 +20,7 @@ $(() => {
     $("#count").text(`${count} clicks on the button`);
   };
 
-  const debouncedFunc = debounce(updateCounter, 300);
+  const debouncedFunc = debounce(updateCounter);
 
   $("button").on("click", debouncedFunc);
 });
