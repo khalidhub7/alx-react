@@ -1,5 +1,5 @@
 {
-  "name": "webpack",
+  "name": "task_1",
   "version": "1.0.0",
   "main": "./js/dashboard_main.js",
   "scripts": {
