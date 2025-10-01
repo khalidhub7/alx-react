@@ -10,7 +10,7 @@ module.exports = {
     path: path.resolve(__dirname, "public"),
   },
 
-  module: {
+  /* module: {
     rules: [
       {
         test: /\.js$/,
@@ -23,5 +23,5 @@ module.exports = {
     static: "./public",
     hot: false,
   },
-  plugins: [new HtmlWebpackPlugin()],
+  plugins: [new HtmlWebpackPlugin()], */
 };
