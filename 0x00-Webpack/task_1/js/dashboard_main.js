@@ -1,26 +1,19 @@
-// check if running in a browser
-const checker = [typeof window, typeof document];
-if (checker.includes("undefined")) {
-  process.exit(0);
-}
+const $ = require('jquery');
+const _ = require('lodash');
 
-import $ from "jquery";
-import { debounce } from "lodash";
+$('body').append('<p>Holberton Dashboard</p>');
+$('body').append('<p>Dashboard data for the students</p>');
+$('body').append('<button>Click here to get started</button>');
+$('body').append("<p id='count'></p>");
+$('body').append('<p>Copyright - Holberton School</p>');
 
-$(() => {
-  $("body").append("<p>ALX Dashboard</p>");
-  $("body").append("<p>Dashboard data for the students</p>");
-  $("body").append("<button>Click here to get started</button>");
-  $("body").append('<p id="count"></p>');
-  $("body").append("<p>Copyright - ALX</p>");
+const updateCounter = () => {
+	let times = $('#count').html() || 0;
+	$('button').on('click', () => {
+		times++;
+		$('#count').html(`${times} clicks on the button`);
+	});
+};
 
-  let count = 0;
-  const updateCounter = () => {
-    count += 1;
-    $("#count").text(`${count} clicks on the button`);
-  };
-
-  const debouncedFunc = debounce(updateCounter, 500);
-
-  $("button").on("click", debouncedFunc);
-});
+_.debounce(updateCounter, 500);
+updateCounter();
