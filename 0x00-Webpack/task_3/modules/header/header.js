@@ -1,15 +1,9 @@
-// check if running in a browser
-const checker = [typeof window, typeof document];
-if (checker.includes("undefined")) {
-  process.exit(0);
-}
+import $ from 'jquery';
+import './header.css';
 
-import $ from "jquery";
-import "./header.css";
+console.log('Init header');
 
-$(() => {
-  $("body").append('<p id="logo"></p>');
-  $("body").append("<h1>ALX Dashboard</h1>");
+const logo = $('<img>').attr('src', 'path/to/logo.png');
+const h1 = $('<h1>').text('Holberton Dashboard');
 
-  console.log("Init header");
-});
+$('header').append(logo, h1);
