@@ -1,29 +1,29 @@
-import $ from 'jquery';
-import _ from 'lodash';
-import '../css/main.css'
+// check if running in a browser
+const checker = [typeof window, typeof document];
+if (checker.includes("undefined")) {
+  process.exit(0);
+}
 
-const body = document.getElementsByTagName("body")[0];
-const div =  document.createElement('div');
-const p1 = document.createElement('p');
-const p2 = document.createElement('p');
-const button = document.createElement('button');
-const p3 = document.createElement('p');
-const p4 = document.createElement('p');
+import $ from "jquery";
+import { debounce } from "lodash";
+import "../css/main.css";
 
-div.setAttribute('id','logo');
-p1.innerHTML = "Holberton Dashboard";
-p2.innerHTML = "Dashboard data for the students";
-button.innerHTML = "Click here to get started";
-p3.setAttribute('id', 'count');
-p4.innerHTML = "Copyright - Holberton School";
+$(() => {
+  $("body").append('<p id="logo"></p>');
 
-body.append(div, p1, p2, button, p3, p4)
+  $("body").append("<p>ALX Dashboard</p>");
+  $("body").append("<p>Dashboard data for the students</p>");
+  $("body").append("<button>Click here to get started</button>");
+  $("body").append('<p id="count"></p>');
+  $("body").append("<p>Copyright - ALX</p>");
 
-let counter = 0;
+  let count = 0;
+  const updateCounter = () => {
+    count += 1;
+    $("#count").text(`${count} clicks on the button`);
+  };
 
-const updateCounter = () => {
-  counter++;
-  $("#count").html(`${counter} clicks on the button`);
-};
+  const debouncedFunc = debounce(updateCounter, 500);
 
-$('button').on('click', _.debounce(updateCounter));
+  $("button").on("click", debouncedFunc);
+});
