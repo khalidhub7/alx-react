@@ -1,16 +1,22 @@
-import $ from 'jquery'
-import _ from 'lodash';
-import './body.css'
+// check if running in a browser
+const checker = [typeof window, typeof document];
+if (checker.includes("undefined")) {
+  process.exit(0);
+}
 
-$('body').append('<p>Dashboard data for the students</p>');
-$('body').append('<button>Click here to get started</button>');
-$('body').append('<p id="count"></p>');
+import $ from "jquery";
+import { debounce } from "lodash";
+import "./body.css";
 
-let counter = 0;
+$(() => {
+  $("body").append("<button>Click here to get started</button>");
+  $("body").append('<p id="count"></p>');
 
-const updateCounter = () => {
-  counter++;
-  $('#count').html(`${counter} clicks on the button`);
-};
-
-$('button').on('click', _.debounce(updateCounter));
+  let count = 0;
+  const updateCounter = () => {
+    count += 1;
+    $("#count").text(`${count} clicks on the button`);
+  };
+  const debouncedFunc = debounce(updateCounter, 500);
+  $("button").on("click", debouncedFunc);
+});
