@@ -1,29 +1,21 @@
 import $ from 'jquery';
-import _ from 'lodash';
-import '../css/main.css'
+import debounce from 'lodash/debounce';
 
-const body = document.getElementsByTagName("body")[0];
-const div =  document.createElement('div');
-const p1 = document.createElement('p');
-const p2 = document.createElement('p');
-const button = document.createElement('button');
-const p3 = document.createElement('p');
-const p4 = document.createElement('p');
+$(document).ready(function() {
+	$('<p>').text('Holberton Dashboard').appendTo('body');
+	$('<p>').text('Dashboard data for the students').appendTo('body');
+	$('<button>').text('Click here to get started').appendTo('body');
+	$('<p>').attr('id', 'count').appendTo('body');
+	$('<p>').text('Copyright - Holberton School').appendTo('body');
 
-div.setAttribute('id','logo');
-p1.innerHTML = "Holberton Dashboard";
-p2.innerHTML = "Dashboard data for the students";
-button.innerHTML = "Click here to get started";
-p3.setAttribute('id', 'count');
-p4.innerHTML = "Copyright - Holberton School";
+	let count = 0;
+	const countParagraph = $('#count');
 
-body.append(div, p1, p2, button, p3, p4)
+	function updateCounter() {
+		count++;
+		countParagraph.text(`${count} clicks on the button`);
+	}
 
-let counter = 0;
-
-const updateCounter = () => {
-  counter++;
-  $("#count").html(`${counter} clicks on the button`);
-};
-
-$('button').on('click', _.debounce(updateCounter));
+	const button = $('button');
+	button.on('click', debounce(updateCounter, 300));
+});
