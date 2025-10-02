@@ -1,16 +1,16 @@
 {
-  "name": "task_1",
+  "name": "task_3",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "main": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack",
-    "start-dev": "webpack-dev-server --open"
+    "start-dev": "webpack serve --open"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "description": "",
   "dependencies": {
     "jquery": "^3.5.1",
     "lodash": "^4.17.20"
