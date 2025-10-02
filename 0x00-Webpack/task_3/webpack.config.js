@@ -9,10 +9,21 @@ module.exports = {
     static: path.resolve(__dirname, "dist"),
     port: 8564,
   },
-  entry: {
+  /* entry: {
     header: path.resolve(__dirname, "modules/header/header.js"),
     body: path.resolve(__dirname, "modules/body/body.js"),
     footer: path.resolve(__dirname, "modules/footer/footer.js"),
+  }, */
+
+  entry: {
+    all: [
+      "./modules/header/header.js",
+      "./modules/body/body.js",
+      "./modules/footer/footer.js",
+    ],
+    /*header: './modules/header/header.js',
+    body: './modules/body/body.js',
+    footer: './modules/footer/footer.js'*/
   },
 
   output: {
@@ -30,17 +41,7 @@ module.exports = {
       // handle images
       {
         test: /\.(png|jpg|jpeg|gif|svg)$/,
-        use: [
-          "file-loader",
-          // "image-webpack-loader"
-          {
-            loader: "image-webpack-loader",
-            options: {
-              bypassOnDebug: true,
-              disable: true,
-            },
-          },
-        ],
+        use: ["file-loader", "image-webpack-loader"],
       },
     ],
   },
