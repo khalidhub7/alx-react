@@ -1,7 +1,8 @@
 {
-  "name": "task_2",
+  "name": "task_1",
   "version": "1.0.0",
-  "main": "./js/dashboard_main.js",
+  "description": "",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack"
@@ -9,8 +10,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
-
   "dependencies": {
     "jquery": "^3.7.1",
     "lodash": "^4.17.21"
