@@ -30,7 +30,17 @@ module.exports = {
       // handle images
       {
         test: /\.(png|jpg|jpeg|gif|svg)$/,
-        use: ["file-loader", "image-webpack-loader"],
+        use: [
+          "file-loader",
+          // "image-webpack-loader"
+          {
+            loader: "image-webpack-loader",
+            options: {
+              bypassOnDebug: true,
+              disable: true,
+            },
+          },
+        ],
       },
     ],
   },
