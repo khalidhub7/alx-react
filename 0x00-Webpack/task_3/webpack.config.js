@@ -28,7 +28,7 @@ module.exports = {
 
   output: {
     filename: "[name].bundle.js",
-    path: path.resolve(__dirname, "dist"),
+    path: path.resolve(__dirname, "public"),
   },
 
   module: {
@@ -50,10 +50,5 @@ module.exports = {
   plugins: [new HtmlWebpackPlugin(), new CleanWebpackPlugin()],
   optimization: {
     splitChunks: { chunks: "all" },
-  },
-
-  performance: {
-    maxAssetSize: 1000000,
-    maxEntrypointSize: 1000000,
   },
 };
