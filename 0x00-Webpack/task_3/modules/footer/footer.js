@@ -1,6 +1,12 @@
-import $ from 'jquery';
-import './footer.css';
+// check if running in a browser
+const checker = [typeof window, typeof document];
+if (checker.includes("undefined")) {
+  process.exit(0);
+}
 
-const copyright = $('<p>').text('Copyright - Holberton School');
+import $ from "jquery";
+import "./footer.css";
 
-$('footer').append(copyright);
+$(() => {
+  $("body").append("<p>Copyright - ALX</p>");
+});

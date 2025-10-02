@@ -1,9 +1,15 @@
-import $ from 'jquery';
-import './header.css';
+// check if running in a browser
+const checker = [typeof window, typeof document];
+if (checker.includes("undefined")) {
+  process.exit(0);
+}
 
-console.log('Init header');
+import $ from "jquery";
+import "./header.css";
 
-const logo = $('<img>').attr('src', 'path/to/logo.png');
-const h1 = $('<h1>').text('Holberton Dashboard');
+$(() => {
+  $("body").append('<p id="logo"></p>');
+  $("body").append("<h1>ALX Dashboard</h1>");
 
-$('header').append(logo, h1);
+  console.log("Init header");
+});
