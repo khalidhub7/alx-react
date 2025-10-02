@@ -18,7 +18,3 @@ const updateCounter = () => {
 
 _.debounce(updateCounter, 500);
 updateCounter();
-<<<<<<< HEAD
-=======
-
->>>>>>> ed735ee0ac3293aa22e5ff07bb687be8a854fc43
