@@ -1,38 +1,31 @@
 const path = require("path");
+const ImageMinimizerPlugin = require("image-minimizer-webpack-plugin");
 
 module.exports = {
-  mode: 'production',
-  entry: './js/dashboard_main.js',
-  performance: {
-    maxAssetSize: 1000000,
-    maxEntrypointSize: 1000000,
-  },
+  mode: "production",
+  entry: path.resolve(__dirname, "js/dashboard_main.js"),
+
   output: {
     filename: "bundle.js",
-    path: path.resolve(__dirname, "public")
+    path: path.resolve(__dirname, "public"),
   },
+
   module: {
     rules: [
+      // handle CSS
       {
-        test: /\.css$/i,
-        use: [
-          'style-loader',
-          'css-loader'
-        ]
-      }, 
-      {
-        test: /\.(png|jpe?g|gif)$/i,
-        use: [
-          'file-loader',
-          {
-            loader: 'image-webpack-loader',
-            options: {
-              bypassOnDebug: true,
-              disable: true,
-            },
-          },
-        ],
+        test: /\.css$/,
+        use: ["style-loader", "css-loader"],
       },
-    ]
-  }
+      // handle images
+      {
+        test: /\.(png|jpg|jpeg|gif|svg)$/,
+        use: ["file-loader", "image-webpack-loader"],
+      },
+    ],
+  },
+
+  performance: {
+    maxAssetSize: 1000000, // 1 MB
+  },
 };
