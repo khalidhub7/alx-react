@@ -1,12 +1,6 @@
-// check if running in a browser
-const checker = [typeof window, typeof document];
-if (checker.includes("undefined")) {
-  process.exit(0);
-}
+import $ from 'jquery';
+import './footer.css';
 
-import $ from "jquery";
-import "./footer.css";
+const copyright = $('<p>').text('Copyright - Holberton School');
 
-$(() => {
-  $("body").append("<p>Copyright - ALX</p>");
-});
+$('footer').append(copyright);
