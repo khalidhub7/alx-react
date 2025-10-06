@@ -1,0 +1,10 @@
+.Notifications {
+  padding: 1rem;
+  margin: 0 auto;
+
+  width: fit-content;
+  height: fit-content;
+
+  border: 2px solid rgb(56, 5, 240);
+  border-radius: 5px;
+}
