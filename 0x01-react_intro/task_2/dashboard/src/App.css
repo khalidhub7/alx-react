@@ -1,0 +1,71 @@
+/* header */
+.App-header {
+  border-bottom: 0.1rem red solid;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.App-header img {
+  max-width: 12rem;
+  min-width: 6rem;
+
+  height: auto;
+}
+.App-header h1 {
+  color: red;
+  margin-left: 1rem;
+}
+
+/* body */
+.App-body {
+  margin: 1.8rem 1.4rem;
+}
+
+/* footer */
+.App-footer {
+  width: 100%;
+  height: 3rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  position: absolute;
+  bottom: 0;
+
+  border-top: 0.1rem red solid;
+}
+
+/* form */
+form {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 2rem 2rem 5rem;
+}
+label {
+  font-weight: bold;
+  cursor: pointer;
+}
+input {
+  padding: 0.3rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+input:focus {
+  outline: red 1px solid;
+  caret-color: red;
+}
+form button {
+  padding: 0 1rem;
+  border: none;
+  background-color: red;
+  color: white;
+  font-weight: 600;
+  border-radius: 1rem;
+  cursor: pointer;
+}
+form button:hover {
+  opacity: 60%;
+}
