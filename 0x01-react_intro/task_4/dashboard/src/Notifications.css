@@ -1,0 +1,42 @@
+.Notifications {
+  padding: 1rem;
+  margin: 0.5rem 2rem;
+  width: calc(100% - 4rem - 2px);
+  height: fit-content;
+  border: 1px solid red;
+  border-radius: 10px;
+  position: relative;
+}
+
+.Notifications button img {
+  width: 2rem;
+  height: auto;
+}
+.Notifications button {
+  border: none;
+  background-color: transparent;
+  position: absolute;
+  top: 5px;
+  right: 5px;
+}
+
+.Notifications button img:hover {
+  opacity: 60%;
+  width: 2.1rem;
+  height: 2.1rem;
+}
+
+.Notifications ul li {
+  margin-left: 2rem;
+}
+
+.Notifications p {
+  margin-bottom: 1rem;
+}
+
+.Notifications ul li[data-priority="default"] {
+  color: blue;
+}
+.Notifications ul li[data-priority="urgent"] {
+  color: red;
+}
