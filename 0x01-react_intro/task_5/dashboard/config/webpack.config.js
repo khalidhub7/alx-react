@@ -1,36 +1,47 @@
 const path = require("path");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-// const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 
 module.exports = {
   mode: "development",
   devtool: "inline-source-map",
-  devServer: { static: "./dist", open: true, hot: true },
-
   entry: "./src/index.js",
   output: {
     filename: "bundle.js",
-    path: path.resolve(__dirname, "dist"),
+    path: path.resolve("./dist"),
+  },
+  performance: {
+    maxAssetSize: 1000000,
+    maxEntrypointSize: 1000000,
+  },
+  devServer: {
+    hot: true,
+    contentBase: path.resolve("./dist"),
+    compress: true,
+    port: 8564,
   },
   module: {
     rules: [
-      // handle css
-      { test: /\.css$/, use: ["style-loader", "css-loader"] },
-      // handle js
-      /* {
-        test: /\.js$/,
-        exclude: /node_modules/,
-        use: "babel-loader",
-      }, */
-      // handle images
       {
-        test: /\.(png|jpg|jpeg|gif|svg)$/,
-        use: ["file-loader", "image-webpack-loader"],
+        test: /\.(js|jsx)$/,
+        exclude: /node_modules/,
+        loader: "babel-loader",
+      },
+      {
+        test: /\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+      {
+        test: /\.(gif|png|jpe?g|svg)$/i,
+        use: [
+          "file-loader",
+          {
+            loader: "image-webpack-loader",
+            options: {
+              bypassOnDebug: true, // webpack@1.x
+              disable: true, // webpack@2.x and newer
+            },
+          },
+        ],
       },
     ],
   },
-
-  // plugins: [new HtmlWebpackPlugin(), new CleanWebpackPlugin()]
-  plugins: [new HtmlWebpackPlugin()],
-  // optimization: { splitChunks: { chunks: "all" } },
 };
