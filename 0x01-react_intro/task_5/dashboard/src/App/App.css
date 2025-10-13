@@ -1,0 +1,113 @@
+/* header */
+.App-header {
+  border-bottom: 2px red solid;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.App-header img {
+  max-width: 12rem;
+  height: auto;
+}
+.App-header h1 {
+  color: red;
+}
+
+/* body */
+.App-body {
+  margin: clamp(8px, 6vw, 2.5rem) clamp(5px, 4vw, 2rem);
+  flex: 1;
+}
+.App-body p,
+.App-body form label {
+  overflow-wrap: break-word;
+  font-size: clamp(6px, 2vw, 1rem);
+}
+
+/* form */
+form {
+  padding: 2vw;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1vh 1vw;
+  overflow-wrap: break-word;
+}
+label {
+  font-weight: bold;
+  cursor: pointer;
+}
+input {
+  padding: 0.3rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+
+  width: min(140px, 30%);
+}
+input:focus {
+  outline: red 1px solid;
+  caret-color: red;
+}
+form button {
+  border: none;
+  background-color: red;
+  color: white;
+  font-weight: 300;
+  font-size: clamp(6px, 1vw, 10px);
+  border-radius: 5px;
+  cursor: pointer;
+  width: 60px;
+  height: auto;
+}
+form button:hover {
+  opacity: 60%;
+}
+
+/* footer */
+.App-footer {
+  width: 100%;
+  height: fit-content;
+  padding: clamp(10px, 2vh, 20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-top: 0.1rem red solid;
+}
+
+@media (max-width: 575px) {
+  .App-header {
+    flex-direction: column;
+    gap: clamp(0px, 2vw, 1rem);
+    border-bottom: 1px red solid;
+  }
+  .App-header h1,
+  .App-header img {
+    margin: auto;
+  }
+  .App-header h1 {
+    font-size: clamp(5px, 8vw, 1.5rem);
+  }
+  .App-header img {
+    width: 50vw;
+  }
+
+  form {
+    flex-direction: column;
+    gap: clamp(5px, 2vw, 1rem);
+  }
+  input {
+    width: 70vw;
+    height: clamp(10px, 10vw, 30px);
+  }
+
+  .App-footer {
+    overflow-wrap: break-word;
+    font-size: clamp(10px, 2vw, 20px);
+  }
+  form button {
+    width: clamp(20px, 11vw, 80px);
+    height: clamp(10px, 5vw, 50px);
+  }
+}
