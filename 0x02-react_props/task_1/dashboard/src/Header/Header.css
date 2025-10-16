@@ -1,0 +1,32 @@
+/* header */
+.App-header {
+  border-bottom: 2px red solid;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.App-header img {
+  max-width: 12rem;
+  height: auto;
+}
+.App-header h1 {
+  color: red;
+}
+
+@media (max-width: 575px) {
+  .App-header {
+    flex-direction: column;
+    gap: clamp(0px, 2vw, 1rem);
+    border-bottom: 1px red solid;
+  }
+  .App-header h1,
+  .App-header img {
+    margin: auto;
+  }
+  .App-header h1 {
+    font-size: clamp(5px, 8vw, 1.5rem);
+  }
+  .App-header img {
+    width: 50vw;
+  }
+}

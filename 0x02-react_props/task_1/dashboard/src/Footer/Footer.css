@@ -1,0 +1,17 @@
+/* footer */
+.App-footer {
+  width: 100%;
+  height: fit-content;
+  padding: clamp(10px, 2vh, 20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 0.1rem red solid;
+}
+
+@media (max-width: 575px) {
+  .App-footer {
+    overflow-wrap: break-word;
+    font-size: clamp(10px, 2vw, 20px);
+  }
+}
