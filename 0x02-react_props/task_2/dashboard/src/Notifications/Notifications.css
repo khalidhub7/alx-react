@@ -1,0 +1,69 @@
+.Notifications {
+  padding: 2vw;
+  margin: clamp(5px, 2vw, 1rem) auto;
+
+  width: 90vw;
+  height: fit-content;
+
+  border-radius: 5px;
+  border-left: 2px solid red;
+  border-right: 2px solid red;
+  border-top: 2px solid #e0e0e0;
+  border-bottom: 2px solid #e0e0e0;
+
+  position: relative;
+  overflow-wrap: break-word;
+  font-size: clamp(5px, 2vw, 1rem);
+}
+.Notifications button {
+  width: clamp(20px, 2vw, 2rem);
+  height: auto;
+
+  border: none;
+  background-color: transparent;
+
+  position: absolute;
+  top: 0.7vw;
+  right: 0.7vw;
+}
+
+.Notifications button img {
+  width: 80%;
+  height: auto;
+  transition: transform 0.3s;
+}
+.Notifications button img:hover {
+  opacity: 60%;
+  transform: rotate(45deg) scale(1.3);
+}
+
+.Notifications ul li {
+  margin-left: 2rem;
+  list-style: "> ";
+}
+
+.Notifications p {
+  margin-bottom: clamp(5px, 2vw, 1rem);
+}
+
+.Notifications ul li[data-notification-type="default"] {
+  color: blue;
+}
+.Notifications ul li[data-notification-type="urgent"] {
+  color: red;
+}
+
+@media (max-width: 360px) {
+  .Notifications ul li {
+    margin-left: clamp(5px, 2vw, 1rem);
+  }
+  .Notifications p {
+    margin-right: 2.1vh;
+  }
+  .Notifications {
+    border-left: 1px solid red;
+    border-right: 1px solid red;
+    border-top: 1px solid #e0e0e0;
+    border-bottom: 1px solid #e0e0e0;
+  }
+}
