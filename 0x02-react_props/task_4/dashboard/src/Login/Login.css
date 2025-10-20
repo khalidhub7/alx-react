@@ -1,0 +1,70 @@
+/*  Mobile first */
+
+/* body */
+.App-body {
+  padding: clamp(8px, 6vw, 2.5rem) clamp(5px, 4vw, 2rem);
+  flex: 1;
+  height: 600px;
+}
+
+.App-body p,
+.App-body form label {
+  overflow-wrap: break-word;
+  font-size: clamp(6px, 2vw, 1rem);
+}
+
+/* form */
+.App-body form {
+  padding: 2vw;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1vh 1vw;
+  overflow-wrap: break-word;
+}
+.App-body form label {
+  font-weight: 200;
+  cursor: pointer;
+}
+.App-body form input {
+  padding: 0.3rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 40%;
+  height: clamp(10px, 10vw, 1.5rem);
+}
+.App-body form input:focus {
+  outline: red 1px solid;
+  caret-color: red;
+}
+.App-body form button {
+  border: none;
+  background-color: red;
+  color: white;
+  font-weight: bold;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: clamp(5px, 5vw, 1rem);
+  width: clamp(20px, 10vw, 2rem);
+  height: clamp(12px, 10vw, 1.5rem);
+}
+.App-body form button:hover {
+  opacity: 60%;
+}
+
+/* Tablet */
+@media (min-width: 601px) {
+  .App-body form {
+    flex-direction: row;
+  }
+
+  .App-body form input {
+    width: clamp(8rem, 20vw, 10rem);
+  }
+}
+
+/* Desktop */
+
+@media (min-width: 901px) {
+  /* same result as tablet */
+}
