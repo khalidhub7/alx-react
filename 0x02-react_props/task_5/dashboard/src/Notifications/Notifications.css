@@ -1,0 +1,85 @@
+/* Mobile first */
+.Notifications {
+  padding: 0.5rem;
+  margin: 0 2vw;
+  height: fit-content;
+  border-radius: 5px;
+  border-left: 1px solid red;
+  border-right: 1px solid red;
+  border-top: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+  position: relative;
+  overflow-wrap: break-word;
+  font-size: clamp(5px, 5vw, 0.7rem);
+}
+.Notifications button {
+  width: clamp(20px, 2vw, 2rem);
+  height: auto;
+  border: none;
+  background-color: transparent;
+  position: absolute;
+  top: 0.7vw;
+  right: 0.7vw;
+}
+.Notifications button img {
+  width: 80%;
+  height: auto;
+  transition: transform 0.3s;
+}
+.Notifications button img:hover {
+  opacity: 60%;
+  transform: rotate(45deg) scale(1.3);
+}
+.Notifications ul li {
+  margin-left: clamp(1px, 5vw, 1rem);
+  list-style: "> ";
+}
+.Notifications p {
+  margin-bottom: clamp(5px, 2vw, 1rem);
+  padding-right: 20vw;
+}
+.menuItem {
+  font-size: clamp(0.4rem, 5vw, 0.8rem);
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 clamp(0.5rem, 10vw, 1rem);
+}
+.Notifications ul li[data-notification-type="default"] {
+  color: blue;
+}
+.Notifications ul li[data-notification-type="urgent"] {
+  color: red;
+}
+
+/* Tablet */
+@media (min-width: 601px) {
+  .Notifications {
+    margin-top: clamp(20px, 20vw, 1.5rem);
+    position: absolute;
+    right: 0;
+    width: 40%;
+    font-size: clamp(10px, 5vw, 0.8rem);
+  }
+  .Notifications ul li {
+    margin-left: clamp(5px, 20vw, 1rem);
+  }
+  .Notifications p {
+    margin-bottom: clamp(5px, 2vw, 1rem);
+    padding-right: 5vw;
+  }
+}
+
+/* Desktop */
+
+@media (min-width: 901px) {
+  :root {
+    --notif-padding: 1vw;
+    --notif-margin: 1vw 2vw;
+  }
+  .menuItem {
+    padding: 1rem 2rem 0 0;
+  }
+  .Notifications {
+    margin-top: 3rem;
+  }
+}
