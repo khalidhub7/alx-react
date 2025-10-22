@@ -11,4 +11,6 @@ A simple project to learn and practice **React props** and component patterns.
 - How to use Fragments
 - When to use a key to improve a loop’s performance
 
-> Hint: The task says to work with Enzyme for tests, but I used React Testing Library (RTL) because Enzyme is deprecated and requires older Node.js, older Webpack, and older React.
+> **Hint:** The original task mentioned using Enzyme for testing, but since Enzyme is deprecated and depends on older versions of Node.js, Webpack, and React, I used **React Testing Library (RTL)** instead.  
+> If you want to learn about Enzyme’s `shallow` rendering, check the docs: [Enzyme Shallow Rendering](https://enzymejs.github.io/enzyme/docs/api/shallow.html)
+
