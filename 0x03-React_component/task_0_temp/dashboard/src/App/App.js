@@ -23,25 +23,6 @@ const listNotifications = [
 ];
 
 class App extends React.Component {
-  constructor(props) {
-    super(props);
-    this.handleKeyDown = this.handleKeyDown.bind(this);
-  }
-
-  handleKeyDown(event) {
-    if (event.ctrlKey && ["h", "H"].includes(event.key)) {
-      alert("Logging you out");
-      this.props.logOut();
-    }
-  }
-
-  componentDidMount() {
-    document.addEventListener("keydown", this.handleKeyDown);
-  }
-  componentWillUnmount() {
-    document.removeEventListener("keydown", this.handleKeyDown);
-  }
-
   render() {
     return (
       <>
@@ -62,11 +43,9 @@ class App extends React.Component {
 
 App.propTypes = {
   isLoggedIn: PropTypes.bool,
-  logOut: PropTypes.func,
 };
 App.defaultProps = {
   isLoggedIn: false,
-  logOut: () => {},
 };
 
 export { listNotifications, listCourses }; // for tests
