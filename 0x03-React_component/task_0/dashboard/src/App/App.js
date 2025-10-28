@@ -23,17 +23,10 @@ const listNotifications = [
 ];
 
 class App extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-
   render() {
     return (
       <>
-        <Notifications
-          displayDrawer={this.props.displayDrawer}
-          listNotifications={listNotifications}
-        />
+        <Notifications listNotifications={listNotifications} />
         <Header />
         {this.props.isLoggedIn ? (
           <div className="courses">
@@ -50,12 +43,10 @@ class App extends React.Component {
 
 App.propTypes = {
   isLoggedIn: PropTypes.bool,
-  displayDrawer: PropTypes.bool,
 };
 App.defaultProps = {
   isLoggedIn: false,
-  displayDrawer: false,
 };
 
-export { listNotifications, listCourses };
+export { listNotifications, listCourses }; // for tests
 export default App;
