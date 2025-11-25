@@ -37,10 +37,11 @@ const App = () => {
     }
     return products.filter(
       (p) =>
-        p.title
+        (p.title
           .toLocaleLowerCase()
           .includes(search.toLocaleLowerCase()) &&
-        category === p.category,
+          category === p.category) ||
+        category === "all",
     );
   }, [search, category]);
 
