@@ -58,10 +58,10 @@ const App = () => {
     [sortBy, filteredProducts],
   );
 
-  useEffect(() => {
+  /* useEffect(() => {
     console.log(sortBy);
     console.log(sortedProducts);
-  }, [sortBy]);
+  }, [sortBy]); */
 
   const config = useMemo(
     () => ({ theme: "dark", currency: "USD" }),
