@@ -1,29 +1,45 @@
-// NOTE: This file is for learning and revision only; not meant to run
+// NOTE: revision file — simple and complete
 
-// Run code once on component mount (setup, fetch, init)
+// 1) Run on mount (fetch, setup)
 useEffect(() => init(), []);
 
-// Run code when specific state/props change
+// 2) Run when dependencies change
 useEffect(() => updateTotal(), [cart]);
 
-// Sync React state with external systems (localStorage, URL, theme)
+// 3) Sync with external systems
 useEffect(() => localStorage.setItem("cart", cart), [cart]);
 
-// Cleanup side effects (unsubscribe, stop timers, remove listeners)
-useEffect(() => { start(); return stop; }, []);
+// 4) Cleanup side effects
+useEffect(() => {
+  start();
+  return stop;
+}, []);
 
-// Avoid running when value is unchanged by checking inside the effect
-useEffect(() => { if (!user) return; fetchData(); }, [user]);
+// 5) Guarded effects
+useEffect(() => {
+  if (!user) return;
+  fetchData();
+}, [user]);
 
-// Separate unrelated logic into separate useEffects
+// 6) Separate unrelated logic
 useEffect(logCart, [cart]);
 useEffect(logUser, [user]);
 
-// Use effect to derive state only when necessary (avoid infinite loops)
+// 7) Derived state
 useEffect(() => setTotal(calc(cart)), [cart]);
 
-// Cleanup previous async requests to avoid race conditions
-useEffect(() => { 
-  let active = true; 
-  fetch().then(r => active && set(r)); 
+// 8) Cancel async work (avoid race conditions)
+useEffect(() => {
+  let active = true;
+  fetch().then((r) => active && set(r));
+  return () => {
+    active = false;
+  };
+}, []);
+
+// 9) Event listeners
+useEffect(() => {
+  const onScroll = () => console.log(window.scrollY);
+  window.addEventListener("scroll", onScroll);
+  return () => window.removeEventListener("scroll", onScroll);
 }, []);

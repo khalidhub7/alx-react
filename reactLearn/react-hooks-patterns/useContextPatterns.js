@@ -1,22 +1,29 @@
-// NOTE: This file is for learning and revision only; not meant to run
+// NOTE: revision file — simple and complete
 
-// Use context to share data across many components without props
-const MyContext = createContext();
-
-// Keep each context focused on one job (cart, auth, theme…)
+// 1) Create context
 const CartContext = createContext();
 
-// Provider contains the state and the functions that update it
-<CartContext.Provider value={{ cart, addItem }}>
+// 2) Provider wraps state + actions
+<CartContext.Provider value={{ cart, addItem }} />;
 
-// Access context through custom hooks for cleaner architecture
+// 3) Access via custom hook
 const useCart = () => useContext(CartContext);
 
-// Use reducers when state logic becomes more complex
+// 4) Use reducer for complex logic
 const [state, dispatch] = useReducer(reducer, initial);
 
-// Memoize the context value to avoid unnecessary re-renders
+// 5) Memoize context value to avoid re-renders
 const value = useMemo(() => ({ cart }), [cart]);
 
-// Don’t use context for large or fast-changing data
-useQuery(["products"], fetchProducts); // instead of context
+// 6) Persist context changes (sync external)
+useEffect(() => {
+  localStorage.setItem("cart", JSON.stringify(cart));
+}, [cart]);
+
+// 7) Restore context on mount
+useEffect(() => {
+  dispatch({ type: "load", payload: loadFromStorage() });
+}, []);
+
+// 8) Avoid context for large / rapidly changing data
+useQuery(["products"], fetchProducts); // better than context

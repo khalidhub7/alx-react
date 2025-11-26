@@ -1,29 +1,29 @@
-// NOTE: This file is for learning and revision only; not meant to run
+// NOTE: revision file — simple and complete
 
-// Basic state → hold a single value
+// 1) Basic state
 const [count, setCount] = useState(0);
 
-// Object state → store multiple related values together
+// 2) Object state
 const [user, setUser] = useState({ name: "", email: "" });
 
-// Array state → manage lists like cart or items
+// 3) Array state
 const [cart, setCart] = useState([]);
 
-// Lazy initial state → compute initial value once
-const [products, setProducts] = useState(() => fetchInitial());
+// 4) Lazy initial state (runs once)
+const [products] = useState(() => fetchInitial());
 
-// Functional updates → update state based on previous state
-setCount(prev => prev + 1);
+// 5) Functional updates (safe when based on prev)
+setCount((prev) => prev + 1);
 
-// Derived state with useEffect → avoid storing redundant values
+// 6) Derived state inside effects (don’t store computed values)
 useEffect(() => setTotal(calc(cart)), [cart]);
 
-// Split complex state → separate concerns instead of one big object
-const [cart, setCart] = useState([]);
-const [user, setUser] = useState({});
+// 7) Split unrelated state
+const [cartList, setCartList] = useState([]);
+const [profile, setProfile] = useState({});
 
-// Reset state → provide a clear reset function
+// 8) Reset state
 const resetCart = () => setCart([]);
 
-// State with side effects → trigger effects after state changes
+// 9) Persist / sync with external systems
 useEffect(() => saveCart(cart), [cart]);
