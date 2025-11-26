@@ -36,18 +36,17 @@ const App = () => {
   const [category, setCategory] = useState("all");
   const [sortBy, setSortBy] = useState("price-asc");
 
-  const filteredProducts = useMemo(() => {
-    if (category === "all" && search === "") {
-      return products;
-    }
-    return products.filter(
-      (p) =>
-        p.title
-          .toLocaleLowerCase()
-          .includes(search.toLocaleLowerCase()) &&
-        (category === p.category || category === "all"),
-    );
-  }, [search, category]);
+  const filteredProducts = useMemo(
+    () =>
+      products.filter(
+        (p) =>
+          p.title
+            .toLocaleLowerCase()
+            .includes(search.toLocaleLowerCase()) &&
+          (category === p.category || category === "all"),
+      ),
+    [search, category],
+  );
 
   const sortedProducts = useMemo(
     () =>
@@ -83,8 +82,10 @@ const App = () => {
     [sortedProducts],
   );
 
-  const searchHandler = (e) =>
-    useCallback((e) => setSearch(e.target.value), []);
+  const searchHandler = useCallback(
+    (e) => setSearch(e.target.value),
+    [],
+  );
 
   return (
     <div style={{ padding: 20 }}>
@@ -94,7 +95,12 @@ const App = () => {
         placeholder="search products"
         value={search}
         onChange={searchHandler}
-        style={{ padding: 10, marginBottom: 20, width: "200px" }}
+        style={{
+          padding: 10,
+          margin: 20,
+          width: "200px",
+          borderRadius: 5,
+        }}
       />
 
       <select
