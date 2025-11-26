@@ -75,6 +75,10 @@ const App = () => {
           <p key={p.id}>
             {p.title} {p.price}${" "}
             <small style={{ color: "red" }}>{p.category}</small>
+            <small style={{ color: "green" }}>
+              {" "}
+              rating: {p.rating}
+            </small>
           </p>
         ))}
       </>
@@ -104,6 +108,12 @@ const App = () => {
       />
 
       <select
+        style={{
+          padding: 10,
+          margin: 20,
+          width: "100px",
+          borderRadius: 5,
+        }}
         value={category}
         onChange={(e) => setCategory(e.target.value)}
       >
@@ -113,6 +123,12 @@ const App = () => {
       </select>
 
       <select
+        style={{
+          padding: 10,
+          margin: 20,
+          width: "100px",
+          borderRadius: 5,
+        }}
         value={sortBy}
         onChange={(e) => setSortBy(e.target.value)}
       >
