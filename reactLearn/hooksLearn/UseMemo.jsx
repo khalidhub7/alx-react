@@ -1,4 +1,9 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+} from "react";
 
 // dummy products (pretend it's huge)
 const products = [
@@ -46,13 +51,18 @@ const App = () => {
 
   const sortedProducts = useMemo(
     () =>
-      category !== "all"
-        ? category === "price-asc"
-          ? products.sort((a, b) => a.price - b.price)
-          : products.sort((a, b) => b.price - a.price)
-        : undefined,
-    [sortBy],
+      sortBy.startsWith("price")
+        ? sortBy === "price-asc"
+          ? [...filteredProducts].sort((a, b) => a.price - b.price) // asc
+          : [...filteredProducts].sort((a, b) => b.price - a.price) // desc
+        : [...filteredProducts].sort((a, b) => b.rating - a.rating), // rating
+    [sortBy, filteredProducts],
   );
+
+  useEffect(() => {
+    console.log(sortBy);
+    console.log(sortedProducts);
+  }, [sortBy]);
 
   const config = useMemo(
     () => ({ theme: "dark", currency: "USD" }),
@@ -62,11 +72,12 @@ const App = () => {
   const sortedProductsJsx = useMemo(
     () => (
       <>
-        {sortedProducts.map((p) => {
-          <p>
-            {p.title} {p.price}
-          </p>;
-        })}
+        {sortedProducts.map((p) => (
+          <p key={p.id}>
+            {p.title} {p.price}${" "}
+            <small style={{ color: "red" }}>{p.category}</small>
+          </p>
+        ))}
       </>
     ),
     [sortedProducts],
