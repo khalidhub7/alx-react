@@ -2,26 +2,12 @@
 // use only Level 2 learned concepts
 
 import React from "react";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  NavLink,
-  useNavigate,
-  Outlet,
-} from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { NavLink, useNavigate, Outlet } from "react-router-dom";
+import { page, layout, header, nav } from "./sharedStyles";
+import { link, container, btn, active } from "./sharedStyles";
 
-import {
-  page,
-  layout,
-  header,
-  nav,
-  link,
-  container,
-  btn,
-  active,
-} from "./sharedStyles";
-
+// simple pages
 const Home = () => <h4 style={page}>home page</h4>;
 const Products = () => <h4 style={page}>our products</h4>;
 const ProductDetails = () => (
@@ -30,6 +16,7 @@ const ProductDetails = () => (
 const Cart = () => <h4 style={page}>your cart</h4>;
 const NotFound = () => <h4 style={page}>404 - page not found</h4>;
 
+// global layout
 const Layout = () => (
   <div style={layout}>
     <header style={header}>
@@ -62,6 +49,7 @@ const Layout = () => (
   </div>
 );
 
+// login
 const Login = () => {
   const navigate = useNavigate();
   return (
@@ -71,6 +59,7 @@ const Login = () => {
   );
 };
 
+// entry point
 const App = () => (
   <BrowserRouter>
     <Routes>

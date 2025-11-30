@@ -2,22 +2,12 @@
 // use only Level 1 learned concepts
 
 import React from "react";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Link,
-  Outlet,
-} from "react-router-dom";
-import {
-  page,
-  layout,
-  header,
-  nav,
-  link,
-  container,
-} from "./sharedStyles";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
+import { page, layout, header } from "./sharedStyles";
+import { nav, link, container } from "./sharedStyles";
 
+// simple pages
 const Home = () => <h4 style={page}>home page</h4>;
 const Products = () => <h4 style={page}>our products</h4>;
 const ProductDetails = () => (
@@ -26,6 +16,7 @@ const ProductDetails = () => (
 const Cart = () => <h4 style={page}>your cart</h4>;
 const About = () => <h4 style={page}>about us</h4>;
 
+// global layout
 const Layout = () => (
   <div style={layout}>
     <header style={header}>
@@ -50,7 +41,7 @@ const Layout = () => (
     </div>
   </div>
 );
-
+// entry point
 const App = () => (
   <BrowserRouter>
     <Routes>
