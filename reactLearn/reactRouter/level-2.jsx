@@ -1,87 +1,96 @@
+// REACT ROUTER MASTERY "Level 2 practice"
+// use only Level 2 learned concepts
+
+import React from "react";
 import {
   BrowserRouter,
   Routes,
   Route,
-  Link,
   NavLink,
   useNavigate,
+  Outlet,
 } from "react-router-dom";
 
-// ---------------------------
-// SIMPLE PAGE COMPONENTS
-// (You can keep them simple; this is routing practice)
-// ---------------------------
-function HomePage() {
-  return <h1>Home</h1>;
-}
+import {
+  page,
+  layout,
+  header,
+  nav,
+  link,
+  container,
+  btn,
+  active,
+} from "./sharedStyles";
 
-function ProductsPage() {
-  return <h1>All Products</h1>;
-}
+const Home = () => <h4 style={page}>home page</h4>;
+const Products = () => <h4 style={page}>our products</h4>;
+const ProductDetails = () => (
+  <h4 style={page}>single product details</h4>
+);
+const Cart = () => <h4 style={page}>your cart</h4>;
+const NotFound = () => <h4 style={page}>404 - page not found</h4>;
 
-function ProductDetails() {
-  return <h1>Product Details</h1>;
-}
+const Layout = () => (
+  <div style={layout}>
+    <header style={header}>
+      <nav style={nav}>
+        <NavLink
+          style={({ isActive }) => ({ ...link, ...active(isActive) })}
+          to="/"
+          end
+        >
+          home
+        </NavLink>
+        <NavLink
+          style={({ isActive }) => ({ ...link, ...active(isActive) })}
+          to="/products"
+        >
+          products
+        </NavLink>
+        <NavLink
+          style={({ isActive }) => ({ ...link, ...active(isActive) })}
+          to="/cart"
+        >
+          cart
+        </NavLink>
+      </nav>
+    </header>
 
-function CartPage() {
-  return <h1>Your Cart</h1>;
-}
-
-function NotFound() {
-  return <h1>404 - Page Not Found</h1>;
-}
-
-// ---------------------------
-// TASK NAVIGATION BAR
-// ---------------------------
-function Navbar() {
-  return (
-    <nav>
-      {/* TODO: Replace these <a> with <NavLink> and highlight active page */}
-
-      {/* home */}
-      <a href="/">Home</a>
-
-      {/* products */}
-      <a href="/products">Products</a>
-
-      {/* cart */}
-      <a href="/cart">Cart</a>
-    </nav>
-  );
-}
-
-// ---------------------------
-// ACTION BUTTON EXAMPLE
-// ---------------------------
-function CheckoutButton() {
-  const navigate = useNavigate();
-
-  function handleCheckout() {
-    // TODO: Navigate programmatically to /cart OR /products using useNavigate
-  }
-
-  return <button onClick={handleCheckout}>Go To Cart</button>;
-}
-
-// ---------------------------
-// MAIN APP
-// ---------------------------
-export default function App() {
-  return (
-    // TODO: Wrap everything with BrowserRouter
-    <div>
-      {/* TODO: Add Navbar here */}
-
-      {/* TODO: Define all routes using Routes/Route:
-          "/" → HomePage
-          "/products" → ProductsPage
-          "/products/:id" → ProductDetails
-          "/cart" → CartPage
-          "*" → NotFound
-       */}
-
-      {/* TODO: Show <CheckoutButton /> only on the HomePage (optional, but recommended) */}
+    <div style={container}>
+      <Outlet />
     </div>
+  </div>
+);
+
+const Login = () => {
+  const navigate = useNavigate();
+  return (
+    <button style={btn} onClick={() => navigate("/products")}>
+      continue as a guest
+    </button>
   );
-}
+};
+
+const App = () => (
+  <BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route
+          index
+          element={
+            <>
+              <Home />
+              <Login />
+            </>
+          }
+        />
+        <Route path="products" element={<Products />} />
+        <Route path="products/:id" element={<ProductDetails />} />
+        <Route path="cart" element={<Cart />} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
+  </BrowserRouter>
+);
+
+export default App;
