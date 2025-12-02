@@ -4,20 +4,9 @@
 import React from "react";
 import { BrowserRouter, Routes, useParams } from "react-router-dom";
 import { Route, NavLink, Outlet } from "react-router-dom";
-
-import {
-  nav,
-  container,
-  link,
-  active,
-  aside,
-  dashboardAside,
-  accountTab,
-  accountTabActive,
-  sideLink,
-  sideLinkActive,
-} from "./sharedStyles";
-
+import { accountTabActive, sideLinkActive } from "./sharedStyles";
+import { dashboardAside, accountTab, sideLink } from "./sharedStyles";
+import { nav, container, link, active, aside } from "./sharedStyles";
 import { page, layout, header } from "./sharedStyles";
 
 // simple pages
