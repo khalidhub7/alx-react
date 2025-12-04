@@ -7,10 +7,11 @@ loaders, actions, createBrowserRouter,
 */
 
 import React from "react";
-import { useNavigation } from "react-router-dom";
+import { useNavigation, NavLink } from "react-router-dom";
 import { RouterProvider, useLoaderData } from "react-router-dom";
 import { useActionData, Form, redirect } from "react-router-dom";
 import { createBrowserRouter, Link, Outlet } from "react-router-dom";
+import { link, active, header, nav } from "./sharedStyles";
 
 // mock db
 let DB = {
@@ -68,13 +69,48 @@ const Layout = () => {
   const data = useLoaderData();
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>🛒level 5 practice</h2>
-      <p>cart Items: {data.cartCount}</p>
-      <hr />
+    <>
+      <header style={header}>
+        <nav style={nav}>
+          <NavLink
+            to="/"
+            style={({ isActive }) => ({
+              ...link,
+              ...active(isActive),
+            })}
+          >
+            home
+          </NavLink>
 
-      <Outlet />
-    </div>
+          <NavLink
+            to="/products"
+            style={({ isActive }) => ({
+              ...link,
+              ...active(isActive),
+            })}
+          >
+            products
+          </NavLink>
+
+          <NavLink
+            to="/cart"
+            style={({ isActive }) => ({
+              ...link,
+              ...active(isActive),
+            })}
+          >
+            cart
+          </NavLink>
+        </nav>
+      </header>
+      <div style={{ padding: 20 }}>
+        <h2>🛒level 5 practice</h2>
+        <p>cart Items: {data.cartCount}</p>
+        <hr />
+
+        <Outlet />
+      </div>
+    </>
   );
 };
 
@@ -84,6 +120,7 @@ const Home = () => {
   return (
     <div>
       <h3>🏠 home</h3>
+      <p>top products</p>
       <ul>
         {products.map((p) => (
           <li key={p.id}>
@@ -104,7 +141,7 @@ const Products = () => {
       <ul>
         {products.map((p) => (
           <li key={p.id}>
-            {p.title} <Link to={`${p.id}`}>details</Link>
+            {p.title} <Link to={p.id}>details</Link>
           </li>
         ))}
       </ul>
