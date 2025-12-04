@@ -35,7 +35,8 @@ const productDetailLoader = ({ params }) =>
 // add to cart action
 const addToCartAction = async ({ request }) => {
   // console.log(Object.keys(request))
-  const { id } = await request.formData();
+  const formD = await request.formData();
+  const id = formD.get("id");
   const check = DB.cart.find((i) => i.id === id);
   if (check) {
     DB.cart = DB.cart.map((p) =>
@@ -47,7 +48,7 @@ const addToCartAction = async ({ request }) => {
       count: 1,
     });
   }
-  redirect("/cart");
+  return redirect("/cart");
 };
 
 // cart
