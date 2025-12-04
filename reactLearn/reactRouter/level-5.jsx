@@ -7,6 +7,7 @@ loaders, actions, createBrowserRouter,
 */
 
 import React from "react";
+import { useNavigation } from "react-router-dom";
 import { RouterProvider, useLoaderData } from "react-router-dom";
 import { useActionData, Form, redirect } from "react-router-dom";
 import { createBrowserRouter, Link, Outlet } from "react-router-dom";
@@ -115,16 +116,20 @@ const Products = () => {
 const ProductDetail = () => {
   const product = useLoaderData();
   const actionResult = useActionData();
+  const nav = useNavigation(); // track form state
+  const isAdding = nav.state === "submitting";
   return (
     <div>
       <h3>📦 product detail</h3>
       <p>
-        {product.title} {product.price}
+        {product.title} — {product.price}
       </p>
-
+      {actionResult ? <p>✔ Added!</p> : undefined}
       <Form method="post">
         <input type="hidden" name="id" value={product.id} />
-        <button type="submit">add to cart</button>
+        <button type="submit">
+          {isAdding ? "adding..." : "add to cart"}
+        </button>
       </Form>
     </div>
   );
