@@ -21,7 +21,7 @@ let DB = {
 };
 
 // cart items count
-const layoutLoader = () => DB.products.length;
+const layoutLoader = () => DB.cart.length;
 // return featured products (all for learning purpose)
 const homeLoader = () => DB.products;
 // all products
@@ -35,8 +35,7 @@ const productDetailLoader = ({ params }) =>
 // add to cart action
 const addToCartAction = async ({ request }) => {
   // console.log(Object.keys(request))
-
-  const { id } = request.GetForm();
+  const { id } = await request.formData();
   const check = DB.cart.find((i) => i.id === id);
   if (check) {
     DB.cart = DB.cart.map((p) =>
@@ -97,12 +96,10 @@ const Products = () => {
   return (
     <div>
       <h3>🛒 all Products</h3>
-      {/* TODO: map products (title + link to detail) */}
       <ul>
         {products.map((p) => (
           <li key={p.id}>
-            {/* later */}
-            {p.title} <Link to="">details</Link>
+            {p.title} <Link to={`products/${p.id}`}>details</Link>
           </li>
         ))}
       </ul>
@@ -118,7 +115,7 @@ const ProductDetail = () => {
     <div>
       <h3>📦 product detail</h3>
       <p>
-        {p.title} {p.price}
+        {product.title} {product.price}
       </p>
 
       <Form>
