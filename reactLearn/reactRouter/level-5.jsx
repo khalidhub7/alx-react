@@ -7,9 +7,9 @@ loaders, actions, createBrowserRouter,
 */
 
 import React from "react";
-import { createBrowserRouter, Link } from "react-router-dom";
 import { RouterProvider, useLoaderData } from "react-router-dom";
 import { useActionData, Form, redirect } from "react-router-dom";
+import { createBrowserRouter, Link, Outlet } from "react-router-dom";
 
 // mock db
 let DB = {
@@ -21,16 +21,19 @@ let DB = {
 };
 
 // cart items count
-const layoutLoader = () => DB.cart.length;
+const layoutLoader = () => ({ cartCount: DB.cart.length });
 // return featured products (all for learning purpose)
 const homeLoader = () => DB.products;
 // all products
 const productsLoader = () => DB.products;
 
 // product by params.id
-const productDetailLoader = ({ params }) =>
+const productDetailLoader = ({ params }) => {
   // both are strings so no type checking
-  DB.products.find((i) => i.id === params.id);
+  const product = DB.products.find((i) => i.id === params.id);
+  if (!product) throw new Response("not found", { status: 404 });
+  return product;
+};
 
 // add to cart action
 const addToCartAction = async ({ request }) => {
@@ -66,7 +69,7 @@ const Layout = () => {
   return (
     <div style={{ padding: 20 }}>
       <h2>🛒level 5 practice</h2>
-      <p>cart Items: {data}</p>
+      <p>cart Items: {data.cartCount}</p>
       <hr />
 
       <Outlet />
@@ -100,7 +103,7 @@ const Products = () => {
       <ul>
         {products.map((p) => (
           <li key={p.id}>
-            {p.title} <Link to={`products/${p.id}`}>details</Link>
+            {p.title} <Link to={`${p.id}`}>details</Link>
           </li>
         ))}
       </ul>
@@ -112,19 +115,19 @@ const Products = () => {
 const ProductDetail = () => {
   const product = useLoaderData();
   const actionResult = useActionData();
-  return !actionResult ? (
+  return (
     <div>
       <h3>📦 product detail</h3>
       <p>
         {product.title} {product.price}
       </p>
 
-      <Form>
-        <input value={product.title} disabled></input>
+      <Form method="post">
+        <input type="hidden" name="id" value={product.id} />
         <button type="submit">add to cart</button>
       </Form>
     </div>
-  ) : undefined;
+  );
 };
 
 // cart comp
@@ -135,7 +138,7 @@ const Cart = () => {
       <h3>🛒 your cart</h3>
       <ul>
         {cart.map((p) => (
-          <li>
+          <li key={p.id}>
             {p.title} x {p.count} {p.price}dh
           </li>
         ))}
