@@ -50,7 +50,7 @@ const cartLoader = () => DB.cart;
 /* actions */
 // add to cart action
 const addToCartAction = async ({ request }) => {
-  // console.log(Object.keys(request))
+  // console.log(request)
   const formD = await request.formData();
   const id = formD.get("id");
   const check = DB.cart.find((i) => i.id === id);
