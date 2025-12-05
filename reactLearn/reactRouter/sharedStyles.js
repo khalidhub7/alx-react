@@ -1,3 +1,5 @@
+// sharedStyles.js
+
 export const page = {
   padding: "1.5rem",
   background: "#fafafa",
@@ -25,7 +27,11 @@ export const nav = { display: "flex", gap: "1.5rem" };
 
 export const link = { textDecoration: "none", color: "#333" };
 
-export const container = { maxWidth: "800px", margin: "0 auto" };
+export const container = {
+  maxWidth: "800px",
+  margin: "0 auto",
+  padding: "1rem",
+};
 
 export const btn = {
   padding: "0.6rem 1rem",
@@ -34,7 +40,7 @@ export const btn = {
   border: "none",
   borderRadius: "6px",
   cursor: "pointer",
-  margin: "1rem",
+  margin: "1rem 0",
 };
 
 export const active = (isActive) =>
@@ -46,7 +52,7 @@ export const active = (isActive) =>
       }
     : undefined;
 
-// ✔ FIXED + styled aside
+// ✔ aside for shop sidebar
 export const aside = {
   width: "200px",
   background: "#ffffff",
