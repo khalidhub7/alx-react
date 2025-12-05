@@ -34,6 +34,9 @@ const layoutLoader = () => ({ cartCount: DB.cart.length });
 const homeLoader = () => DB.products;
 // all products
 const productsLoader = () => DB.products;
+/* const productsLoader = () => {
+  throw new Error();
+}; */
 // product by params.id
 const productDetailLoader = ({ params }) => {
   // both are strings so no type checking
@@ -65,9 +68,17 @@ const addToCartAction = async ({ request }) => {
 };
 
 // err handler
-const ErrorElement = () => (
-  <h4 style={page}>❌ something went wrong loading data.</h4>
-);
+const ErrorElement = () => {
+  const navigate = useNavigate();
+  return (
+    <>
+      <h4 style={page}>❌ something went wrong loading data.</h4>
+      <button style={btn} onClick={() => navigate("/")}>
+        go back home
+      </button>
+    </>
+  );
+};
 
 /* components */
 // layout comp
@@ -128,7 +139,7 @@ const Home = () => {
   return (
     <div style={page}>
       <h4>🏠 home</h4>
-      <p>top products</p>
+      <p>⭐ top products</p>
       <ul>
         {products.map((p) => (
           <li key={p.id}>
@@ -152,7 +163,15 @@ const Products = () => {
       <ul>
         {products.map((p) => (
           <li key={p.id}>
-            {p.title} <Link to={p.id}>details</Link>
+            {p.title}{" "}
+            <button style={btn}>
+              <Link
+                to={p.id}
+                style={{ color: "inherit", textDecoration: "none" }}
+              >
+                details
+              </Link>
+            </button>
           </li>
         ))}
       </ul>
