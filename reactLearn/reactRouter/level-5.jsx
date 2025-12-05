@@ -7,11 +7,16 @@ loaders, actions, createBrowserRouter,
 */
 
 import React from "react";
-import { useNavigation, NavLink } from "react-router-dom";
+import {
+  useNavigation,
+  NavLink,
+  useNavigate,
+} from "react-router-dom";
 import { RouterProvider, useLoaderData } from "react-router-dom";
 import { useActionData, Form, redirect } from "react-router-dom";
 import { createBrowserRouter, Link, Outlet } from "react-router-dom";
-import { link, active, header, nav } from "./sharedStyles";
+import { nav, layout, container, page, btn } from "./sharedStyles";
+import { link, active, header } from "./sharedStyles";
 
 // mock db
 let DB = {
@@ -22,13 +27,13 @@ let DB = {
   cart: [],
 };
 
+/* loaders */
 // cart items count
 const layoutLoader = () => ({ cartCount: DB.cart.length });
 // return featured products (all for learning purpose)
 const homeLoader = () => DB.products;
 // all products
 const productsLoader = () => DB.products;
-
 // product by params.id
 const productDetailLoader = ({ params }) => {
   // both are strings so no type checking
@@ -36,7 +41,10 @@ const productDetailLoader = ({ params }) => {
   if (!product) throw new Response("not found", { status: 404 });
   return product;
 };
+// cart
+const cartLoader = () => DB.cart;
 
+/* actions */
 // add to cart action
 const addToCartAction = async ({ request }) => {
   // console.log(Object.keys(request))
@@ -56,20 +64,18 @@ const addToCartAction = async ({ request }) => {
   return redirect("/cart");
 };
 
-// cart
-const cartLoader = () => DB.cart;
-
 // err handler
 const ErrorElement = () => (
-  <h4>❌ something went wrong loading data.</h4>
+  <h4 style={page}>❌ something went wrong loading data.</h4>
 );
 
+/* components */
 // layout comp
 const Layout = () => {
   const data = useLoaderData();
 
   return (
-    <>
+    <div style={layout}>
       <header style={header}>
         <nav style={nav}>
           <NavLink
@@ -103,23 +109,25 @@ const Layout = () => {
           </NavLink>
         </nav>
       </header>
-      <div style={{ padding: 20 }}>
-        <h2>🛒level 5 practice</h2>
+
+      <div style={container}>
+        <h4>🛒level 5 practice</h4>
         <p>cart Items: {data.cartCount}</p>
         <hr />
 
         <Outlet />
       </div>
-    </>
+    </div>
   );
 };
 
 // home comp
 const Home = () => {
   const products = useLoaderData();
+  const navigate = useNavigate();
   return (
-    <div>
-      <h3>🏠 home</h3>
+    <div style={page}>
+      <h4>🏠 home</h4>
       <p>top products</p>
       <ul>
         {products.map((p) => (
@@ -128,6 +136,9 @@ const Home = () => {
           </li>
         ))}
       </ul>
+      <button onClick={() => navigate("/products")} style={btn}>
+        see all products
+      </button>
     </div>
   );
 };
@@ -136,8 +147,8 @@ const Home = () => {
 const Products = () => {
   const products = useLoaderData();
   return (
-    <div>
-      <h3>🛒 all Products</h3>
+    <div style={page}>
+      <h4>🛒 all Products</h4>
       <ul>
         {products.map((p) => (
           <li key={p.id}>
@@ -152,20 +163,20 @@ const Products = () => {
 // product details
 const ProductDetail = () => {
   const product = useLoaderData();
-  const actionResult = useActionData();
-  const nav = useNavigation(); // track form state
-  const isAdding = nav.state === "submitting";
+  /* const actionResult = useActionData(); */
+  const nvg = useNavigation(); // track form state
+  // const isAdding = nvg.state === "submitting";
   return (
-    <div>
-      <h3>📦 product detail</h3>
+    <div style={page}>
+      <h4>📦 product detail</h4>
       <p>
         {product.title} — {product.price}
       </p>
-      {actionResult ? <p>✔ Added!</p> : undefined}
+
       <Form method="post">
         <input type="hidden" name="id" value={product.id} />
-        <button type="submit">
-          {isAdding ? "adding..." : "add to cart"}
+        <button type="submit" style={btn}>
+          add to cart
         </button>
       </Form>
     </div>
@@ -176,8 +187,8 @@ const ProductDetail = () => {
 const Cart = () => {
   const cart = useLoaderData();
   return (
-    <div>
-      <h3>🛒 your cart</h3>
+    <div style={page}>
+      <h4>🛒 your cart</h4>
       <ul>
         {cart.map((p) => (
           <li key={p.id}>
