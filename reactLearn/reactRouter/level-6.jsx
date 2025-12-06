@@ -98,9 +98,12 @@ const Products = () => {
       {DB.products.map((p) => (
         <div key={p.id} style={{ marginBottom: 10 }}>
           <b>{p.title}</b> — ${p.price}
-          <br />
-          <input type="number" name="id" value={p.id} />
-          <button type="submit">{state ? state : "add to cart"}</button>
+          <Form method="post">
+            <input type="number" name="id" value={p.id} hidden readOnly />
+            <button type="submit">
+              {state === "submitting" ? state : "add to cart"}
+            </button>
+          </Form>
         </div>
       ))}
       <button onClick={() => navigate("/cart")}>go to cart</button>
