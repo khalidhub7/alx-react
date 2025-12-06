@@ -89,8 +89,9 @@ const Login = () => {
 // products comp
 const Products = () => {
   const navigate = useNavigate();
-  const navigateStatus = useNavigation();
-  const state = navigateStatus.state;
+  const nav = useNavigation();
+  const submitState = nav.state === "submitting";
+  const currentId = nav.formData ? nav.formData.get("id") : undefined;
   return (
     <div>
       <h4>products</h4>
@@ -101,11 +102,12 @@ const Products = () => {
           <Form method="post">
             <input type="hidden" name="id" value={p.id} />
             <button type="submit">
-              {state === "submitting" ? "adding..." : "add to cart"}
+              {submitState && currentId === p.id ? "adding..." : "add to cart"}
             </button>
           </Form>
         </div>
       ))}
+
       <button onClick={() => navigate("/cart")}>go to cart</button>
     </div>
   );
