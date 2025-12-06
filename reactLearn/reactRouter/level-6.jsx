@@ -99,9 +99,9 @@ const Products = () => {
         <div key={p.id} style={{ marginBottom: 10 }}>
           <b>{p.title}</b> — ${p.price}
           <Form method="post">
-            <input type="number" name="id" value={p.id} hidden readOnly />
+            <input type="hidden" name="id" value={p.id} />
             <button type="submit">
-              {state === "submitting" ? state : "add to cart"}
+              {state === "submitting" ? "adding..." : "add to cart"}
             </button>
           </Form>
         </div>
