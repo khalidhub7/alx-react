@@ -10,6 +10,9 @@ import React from "react";
 import { useNavigate, redirect, NavLink, Outlet } from "react-router-dom";
 import { Form, useActionData, useNavigation } from "react-router-dom";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { page, container, btn, nav, link, active } from "./sharedStyles";
+import { layout, header } from "./sharedStyles";
+import { form, input, formError } from "./sharedStyles";
 
 // mock db
 let DB = {
@@ -48,19 +51,38 @@ export async function addToCartAction({ request }) {
     const product = DB.products.find((p) => p.id === id);
     DB.cart.push({ ...product, count: 1 });
   }
+  await new Promise((r) => setTimeout(r, 2000));
   return redirect("/cart");
 }
 
 // layout comp
 const Layout = () => (
-  <div>
-    <nav style={{ display: "flex", gap: 20 }}>
-      <NavLink to="/">login</NavLink>
-      <NavLink to="/products">products</NavLink>
-      <NavLink to="/cart">cart</NavLink>
-    </nav>
-    <hr />
-    <Outlet />
+  <div style={layout}>
+    <header style={header}>
+      <nav style={nav}>
+        <NavLink
+          to="/"
+          style={({ isActive }) => ({ ...link, ...active(isActive) })}
+        >
+          login
+        </NavLink>
+        <NavLink
+          to="/products"
+          style={({ isActive }) => ({ ...link, ...active(isActive) })}
+        >
+          products
+        </NavLink>
+        <NavLink
+          to="/cart"
+          style={({ isActive }) => ({ ...link, ...active(isActive) })}
+        >
+          cart
+        </NavLink>
+      </nav>
+    </header>
+    <div style={container}>
+      <Outlet />
+    </div>
   </div>
 );
 
@@ -71,17 +93,17 @@ const Login = () => {
   const isSubmitting = nav.state === "submitting";
 
   return (
-    <div>
+    <div style={page}>
       <h4>login</h4>
 
-      <Form method="post">
-        <input type="email" name="email" />
-        <input type="password" name="password" />
-        <button disabled={isSubmitting}>
+      <Form method="post" style={form}>
+        <input type="email" name="email" style={input} />
+        <input type="password" name="password" style={input} />
+        <button disabled={isSubmitting} style={btn}>
           {isSubmitting ? "checking..." : "login"}
         </button>
       </Form>
-      {data ? <p>{data.error}</p> : undefined}
+      {data ? <p style={formError}>{data.error}</p> : undefined}
     </div>
   );
 };
@@ -90,32 +112,41 @@ const Login = () => {
 const Products = () => {
   const navigate = useNavigate();
   const nav = useNavigation();
-  const submitState = nav.state === "submitting";
+  const isSubmitting = nav.state === "submitting";
   const currentId = nav.formData ? nav.formData.get("id") : undefined;
   return (
-    <div>
+    <div style={page}>
       <h4>products</h4>
 
       {DB.products.map((p) => (
         <div key={p.id} style={{ marginBottom: 10 }}>
           <b>{p.title}</b> — ${p.price}
-          <Form method="post">
+          <Form method="post" style={form}>
             <input type="hidden" name="id" value={p.id} />
-            <button type="submit">
-              {submitState && currentId === p.id ? "adding..." : "add to cart"}
+            <button
+              type="submit"
+              disabled={isSubmitting && currentId === p.id}
+              style={btn}
+            >
+              {isSubmitting && currentId === p.id ? "adding..." : "add to cart"}
+              {/* {console.log(
+                `isSubmitting: ${isSubmitting} currentId: ${currentId}`,
+              )} */}
             </button>
           </Form>
         </div>
       ))}
 
-      <button onClick={() => navigate("/cart")}>go to cart</button>
+      <button onClick={() => navigate("/cart")} style={btn}>
+        go to cart
+      </button>
     </div>
   );
 };
 
 // cart comp
 const Cart = () => (
-  <div>
+  <div style={page}>
     <h2>your cart</h2>
     <ul>
       {DB.cart.map((i) => (
