@@ -117,11 +117,13 @@ const Products = () => {
 const Cart = () => (
   <div>
     <h2>your cart</h2>
-    {DB.cart.map((i) => (
-      <li key={i.id}>
-        {i.title} x{i.count} — {i.price}
-      </li>
-    ))}
+    <ul>
+      {DB.cart.map((i) => (
+        <li key={i.id}>
+          {i.title} x{i.count} — ${i.price * i.count}
+        </li>
+      ))}
+    </ul>
   </div>
 );
 
