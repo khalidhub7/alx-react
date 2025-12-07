@@ -16,7 +16,7 @@ import { form, input, formError } from "./sharedStyles";
 
 // mock db
 let DB = {
-  users: [{ email: "admin@mail.com", password: "1234" }],
+  users: [{ email: "admin@mail.com", password: "0000" }],
   products: [
     { id: "1", title: "Shoes", price: 120 },
     { id: "2", title: "Hoodie", price: 80 },
