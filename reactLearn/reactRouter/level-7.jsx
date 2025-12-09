@@ -84,7 +84,7 @@ const ProductsPage = () => {
             <li key={p.id}>
               {p.title} {p.price}
             </li>
-            <button onClick={check(err(p.id))}>add to cart</button>
+            <button onClick={() => {throw err(p.id)}}>add to cart</button>
           </>
         ))}
       </ul>
@@ -109,7 +109,7 @@ const ProductsError = () => {
 };
 
 const productLoader = async ({ params }) => {
-  const id = params.get("id");
+  const id = params.id;
   if (!id) {
     throw new Response("not found", { status: 404 });
   } else if (id === "1") {
