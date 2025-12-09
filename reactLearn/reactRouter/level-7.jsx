@@ -58,19 +58,19 @@ const MainLayoutError = () => {
 };
 
 // products loader
-const productsLoader = async () =>
-  Math.random() < 0.5 // 20% chance
-    ? setTimeout(() => {
-        new Response(DB.products, { status: 200 });
-      }, 2000)
-    : setTimeout(
-        () => new Response("internal server error", { status: 500 }),
-        2000,
-      );
+const productsLoader = async () => {
+  await new Promise((r) => setTimeout(r, 2000));
+
+  if (Math.random() < 0.5) {
+    // 50% chance
+    throw new Response("internal server error", { status: 500 });
+  }
+  return DB.products;
+};
 
 // products comp
 const ProductsPage = () => {
-  const products = check(useLoaderData()); // expect a 'Response' obj
+  const products = useLoaderData(); // expect a 'Response' obj
   const err = (id) =>
     id === "3"
       ? new Response("Gone", { status: 410 })
@@ -84,7 +84,7 @@ const ProductsPage = () => {
             <li key={p.id}>
               {p.title} {p.price}
             </li>
-            <button onClick={err(p.id)}>add to cart</button>
+            <button onClick={check(err(p.id))}>add to cart</button>
           </>
         ))}
       </ul>
@@ -147,7 +147,7 @@ const ProductError = () => {
 const router = createBrowserRouter([
   {
     element: <MainLayout />,
-    errorElement: <RootError />,
+    errorElement: <MainLayoutError />,
     children: [
       {
         path: "products",
