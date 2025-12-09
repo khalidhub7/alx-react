@@ -8,8 +8,11 @@ bubble-up boundaries
 */
 
 import React from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
 import { useLoaderData, useRouteError, redirect } from "react-router-dom";
+import { link, active } from "./sharedStyles";
+import { page, btn, layout, header, nav, container } from "./sharedStyles";
 
 // mock db
 let DB = {
@@ -20,15 +23,7 @@ let DB = {
   ],
   users: [{ id: "u1", name: "Admin", role: "admin" }],
 };
-
-// utility
-const check = (res) => {
-  if (!res.ok) {
-    throw new Response(res.statusText, { status: res.status });
-  }
-  return res;
-};
-
+// helpers
 const ErrComp = ({ status, msg }) => (
   <div>
     <h4>something went wrong</h4>
@@ -41,23 +36,7 @@ const ErrComp = ({ status, msg }) => (
   </div>
 );
 
-// main layout
-const MainLayout = () => (
-  <>
-    <h4>level 4 practice</h4>
-    <div className="page">
-      <Outlet />
-    </div>
-  </>
-);
-
-// MainLayout Error Boundary
-const MainLayoutError = () => {
-  const err = useRouteError();
-  return <ErrComp status={err.status} msg={err.statusText} />;
-};
-
-// products loader
+// loaders
 const productsLoader = async () => {
   await new Promise((r) => setTimeout(r, 2000));
 
@@ -67,37 +46,21 @@ const productsLoader = async () => {
   }
   return DB.products;
 };
-
-// products comp
-const ProductsPage = () => {
-  const products = useLoaderData();
-  const err = (id) =>
-    id === "3"
-      ? new Response("Gone", { status: 410 })
-      : new Response("product not found", { status: 404 });
-  return (
-    <div>
-      <h4>Products</h4>
-      <ul>
-        {products.map((p) => (
-          <>
-            <li key={p.id}>
-              {p.title} {p.price}
-            </li>
-            <button
-              onClick={() => {
-                throw err(p.id);
-              }}
-            >
-              add to cart
-            </button>
-          </>
-        ))}
-      </ul>
-    </div>
-  );
+const productLoader = async ({ params }) => {
+  const id = params.id;
+  if (!id) {
+    throw new Response("not found", { status: 404 });
+  } else if (id === "1") {
+    throw redirect("/products");
+  }
+  return DB.products.find((i) => i.id === id);
 };
 
+// Error Boundaries
+const MainLayoutError = () => {
+  const err = useRouteError();
+  return <ErrComp status={err.status} msg={err.statusText} />;
+};
 const ProductsError = () => {
   const err = useRouteError();
   const status = err.status;
@@ -113,28 +76,6 @@ const ProductsError = () => {
       return <ErrComp status={400} msg={"something went wrong"} />;
   }
 };
-
-const productLoader = async ({ params }) => {
-  const id = params.id;
-  if (!id) {
-    throw new Response("not found", { status: 404 });
-  } else if (id === "1") {
-    throw redirect("/products");
-  }
-  return DB.products.find((i) => i.id === id);
-};
-
-const ProductPage = () => {
-  const product = useLoaderData();
-  return (
-    <div>
-      <p>
-        {product.title} {product.price}
-      </p>
-    </div>
-  );
-};
-
 const ProductError = () => {
   const err = useRouteError();
 
@@ -146,9 +87,79 @@ const ProductError = () => {
   }
 };
 
+// comps
+// main layout
+const MainLayout = () => (
+  <div style={layout}>
+    <header style={header}>
+      <nav style={nav}>
+        <NavLink
+          to="/"
+          style={({ isActive }) => ({ ...link, ...active(isActive) })}
+        >
+          login
+        </NavLink>
+        <NavLink
+          to="/products"
+          style={({ isActive }) => ({ ...link, ...active(isActive) })}
+        >
+          products
+        </NavLink>
+      </nav>
+    </header>
+    <div style={container}>
+      <Outlet />
+    </div>
+  </div>
+);
+
+// products comp
+const ProductsPage = () => {
+  const products = useLoaderData();
+  const err = (id) =>
+    id === "3"
+      ? new Response("Gone", { status: 410 })
+      : new Response("product not found", { status: 404 });
+  return (
+    <div style={page}>
+      <h4>Products</h4>
+      <ul>
+        {products.map((p) => (
+          <div key={p.id}>
+            <li>
+              {p.title} {p.price}
+            </li>
+            <button
+              style={btn}
+              onClick={() => {
+                const error = err(p.id)
+                
+              }}
+            >
+              add to cart
+            </button>
+          </div>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+const ProductPage = () => {
+  const product = useLoaderData();
+  return (
+    <div style={page}>
+      <p>
+        {product.title} {product.price}
+      </p>
+    </div>
+  );
+};
+
 // router config
 const router = createBrowserRouter([
   {
+    path: "/",
     element: <MainLayout />,
     errorElement: <MainLayoutError />,
     children: [
