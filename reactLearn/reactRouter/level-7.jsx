@@ -53,7 +53,7 @@ const MainLayout = () => (
 
 // MainLayout Error Boundary
 const MainLayoutError = () => {
-  const err = useRouteError(); // expect a 'Response' err
+  const err = useRouteError();
   return <ErrComp status={err.status} msg={err.statusText} />;
 };
 
@@ -70,7 +70,7 @@ const productsLoader = async () => {
 
 // products comp
 const ProductsPage = () => {
-  const products = useLoaderData(); // expect a 'Response' obj
+  const products = useLoaderData();
   const err = (id) =>
     id === "3"
       ? new Response("Gone", { status: 410 })
@@ -84,7 +84,13 @@ const ProductsPage = () => {
             <li key={p.id}>
               {p.title} {p.price}
             </li>
-            <button onClick={() => {throw err(p.id)}}>add to cart</button>
+            <button
+              onClick={() => {
+                throw err(p.id);
+              }}
+            >
+              add to cart
+            </button>
           </>
         ))}
       </ul>
@@ -115,14 +121,11 @@ const productLoader = async ({ params }) => {
   } else if (id === "1") {
     throw redirect("/products");
   }
-  return new Response(
-    DB.products.find((i) => i.id === id),
-    { status: 200 },
-  );
+  return DB.products.find((i) => i.id === id);
 };
 
 const ProductPage = () => {
-  const product = check(useLoaderData());
+  const product = useLoaderData();
   return (
     <div>
       <p>
@@ -133,7 +136,7 @@ const ProductPage = () => {
 };
 
 const ProductError = () => {
-  const err = check(useRouteError());
+  const err = useRouteError();
 
   switch (err.status) {
     case 404:
