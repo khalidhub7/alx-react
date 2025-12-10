@@ -44,7 +44,10 @@ const productsLoader = async () => {
 
   if (Math.random() < 0.5) {
     // 50% chance
-    throw new Response("Server exploded", { status: 500 });
+    throw new Response("", {
+      status: 500,
+      statusText: "server exploded",
+    });
   }
   return DB.products;
 };
@@ -53,30 +56,26 @@ const productLoader = async ({ params }) => {
 
   const product = DB.products.find((i) => i.id === id);
   if (!product) {
-    throw new Response("Product not found", { status: 404 });
+    throw new Response("", { status: 404, statusText: "product not found" });
   } else if (id === "1") {
     throw redirect("/products");
   } else if (id === "2") {
-    throw new Response("No longer available", { status: 410 });
+    throw new Response("", { status: 410, statusText: "no longer available" });
   }
   return product;
 };
 
 // Error Boundaries
 const MainLayoutError = () => {
-  const err = useRouteError();
-  const { status, statusText } = err;
+  const { status, statusText } = useRouteError();
   return <ErrComp status={status} msg={statusText} />;
 };
 const ProductsError = () => {
-  const err = useRouteError();
-  const { status, statusText } = err;
+  const { status, statusText } = useRouteError();
   return <ErrComp status={status} msg={statusText} />;
 };
 const ProductError = () => {
-  const err = useRouteError();
-  const { status, statusText } = err;
-  console.log(status, statusText)
+  const { status, statusText } = useRouteError();
   return <ErrComp status={status} msg={statusText} />;
 };
 
