@@ -56,8 +56,6 @@ const productsLoader = async () => {
       status: 500,
       statusText: "server exploded",
     });
-
-    throw new Response("server exploded", { status: 500 });
   }
   return DB.products;
 };
