@@ -44,17 +44,20 @@ const productsLoader = async () => {
 
   if (Math.random() < 0.5) {
     // 50% chance
-    throw new Response("internal server error", { status: 500 });
+    throw new Response("Server exploded", { status: 500 });
   }
   return DB.products;
 };
 const productLoader = async ({ params }) => {
   const id = params.id;
+
   const product = DB.products.find((i) => i.id === id);
   if (!product) {
-    throw new Response("not found", { status: 404 });
+    throw new Response("Product not found", { status: 404 });
   } else if (id === "1") {
     throw redirect("/products");
+  } else if (id === "2") {
+    throw new Response("No longer available", { status: 410 });
   }
   return product;
 };
@@ -62,7 +65,8 @@ const productLoader = async ({ params }) => {
 // Error Boundaries
 const MainLayoutError = () => {
   const err = useRouteError();
-  return <ErrComp status={err.status} msg={err.statusText} />;
+  const { status, statusText } = err;
+  return <ErrComp status={status} msg={statusText} />;
 };
 const ProductsError = () => {
   const err = useRouteError();
@@ -72,6 +76,7 @@ const ProductsError = () => {
 const ProductError = () => {
   const err = useRouteError();
   const { status, statusText } = err;
+  console.log(status, statusText)
   return <ErrComp status={status} msg={statusText} />;
 };
 
@@ -81,7 +86,7 @@ const ProductError = () => {
 const Home = () => {
   const navigate = useNavigate();
   /* const auth = useLoaderData(); */
-  const auth = false;
+  const auth = false; // lets mock it now
   return (
     <button style={btn} onClick={() => navigate("/products")} disabled={auth}>
       {auth ? "Guest Limit Reached" : "Continue as Guest"}
@@ -144,11 +149,7 @@ const ProductsPage = () => {
 
 const ProductPage = () => {
   const product = useLoaderData();
-  /* const err = (id) =>
-    id === "3"
-      ? new Response("Gone", { status: 410 })
-      : new Response("product not found", { status: 404 });
-  err(id); */
+
   return (
     <div style={page}>
       <p>
