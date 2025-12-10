@@ -37,7 +37,15 @@ const ErrComp = ({ status, msg }) => (
 );
 
 // loaders
-const homeLoader = () => Math.random() < 0.5; // 50% chance
+const homeLoader = async () => {
+  await new Promise((r) => setTimeout(r, 0));
+  /* throw new Response("", {
+    status: 400,
+    statusText: "bubble-up behavior",
+  }); */
+
+  return Math.random() < 0.5; // 50% chance
+};
 
 const productsLoader = async () => {
   /* await new Promise((r) => setTimeout(r, 2000)); */
@@ -48,6 +56,8 @@ const productsLoader = async () => {
       status: 500,
       statusText: "server exploded",
     });
+
+    throw new Response("server exploded", { status: 500 });
   }
   return DB.products;
 };
@@ -68,6 +78,9 @@ const productLoader = async ({ params }) => {
 // Error Boundaries
 const MainLayoutError = () => {
   const { status, statusText } = useRouteError();
+  console.log(
+    "check: should runs if a child without an errorElement throws an err",
+  );
   return <ErrComp status={status} msg={statusText} />;
 };
 const ProductsError = () => {
@@ -168,6 +181,7 @@ const router = createBrowserRouter([
         index: true,
         element: <Home />,
         loader: homeLoader,
+        // no 'errorElement' Bubble-Up Behavior
       },
       {
         path: "products",
