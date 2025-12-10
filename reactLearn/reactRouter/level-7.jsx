@@ -84,8 +84,7 @@ const ProductError = () => {
 // home comp
 const Home = () => {
   const navigate = useNavigate();
-  /* const auth = useLoaderData(); */
-  const auth = false; // lets mock it now
+  const auth = useLoaderData();
   return (
     <button style={btn} onClick={() => navigate("/products")} disabled={auth}>
       {auth ? "Guest Limit Reached" : "Continue as Guest"}
@@ -138,7 +137,7 @@ const ProductsPage = () => {
         <li key={"5"}>
           rx580 100$
           <button style={btn} onClick={() => navigate("5")}>
-            add to cart
+            see
           </button>
         </li>
       </ul>
