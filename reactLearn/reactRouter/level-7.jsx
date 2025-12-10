@@ -129,7 +129,7 @@ const ProductsPage = () => {
           <li key={p.id}>
             {p.title} {p.price}
             <button style={btn} onClick={() => navigate(p.id)}>
-              add to cart
+              see
             </button>
           </li>
         ))}
