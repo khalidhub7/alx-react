@@ -37,8 +37,10 @@ const ErrComp = ({ status, msg }) => (
 );
 
 // loaders
+const homeLoader = () => Math.random() < 0.5; // 50% chance
+
 const productsLoader = async () => {
-  await new Promise((r) => setTimeout(r, 2000));
+  /* await new Promise((r) => setTimeout(r, 2000)); */
 
   if (Math.random() < 0.5) {
     // 50% chance
@@ -48,12 +50,13 @@ const productsLoader = async () => {
 };
 const productLoader = async ({ params }) => {
   const id = params.id;
-  if (!id) {
+  const product = DB.products.find((i) => i.id === id);
+  if (!product) {
     throw new Response("not found", { status: 404 });
   } else if (id === "1") {
     throw redirect("/products");
   }
-  return DB.products.find((i) => i.id === id);
+  return product;
 };
 
 // Error Boundaries
@@ -63,31 +66,29 @@ const MainLayoutError = () => {
 };
 const ProductsError = () => {
   const err = useRouteError();
-  const status = err.status;
-
-  switch (status) {
-    case 500:
-      return <ErrComp status={500} msg={"server exploded"} />;
-    case 404:
-      return <ErrComp status={404} msg={"product was not found"} />;
-    case 410:
-      return <ErrComp status={410} msg={"product is no longer available"} />;
-    default:
-      return <ErrComp status={400} msg={"something went wrong"} />;
-  }
+  const { status, statusText } = err;
+  return <ErrComp status={status} msg={statusText} />;
 };
 const ProductError = () => {
   const err = useRouteError();
-
-  switch (err.status) {
-    case 404:
-      return <ErrComp status={404} msg={"no such product"} />;
-    default:
-      return <ErrComp status={400} msg={"something went wrong"} />;
-  }
+  const { status, statusText } = err;
+  return <ErrComp status={status} msg={statusText} />;
 };
 
 // comps
+
+// home comp
+const Home = () => {
+  const navigate = useNavigate();
+  /* const auth = useLoaderData(); */
+  const auth = false;
+  return (
+    <button style={btn} onClick={() => navigate("/products")} disabled={auth}>
+      {auth ? "Guest Limit Reached" : "Continue as Guest"}
+    </button>
+  );
+};
+
 // main layout
 const MainLayout = () => (
   <div style={layout}>
@@ -116,30 +117,26 @@ const MainLayout = () => (
 // products comp
 const ProductsPage = () => {
   const products = useLoaderData();
-  const err = (id) =>
-    id === "3"
-      ? new Response("Gone", { status: 410 })
-      : new Response("product not found", { status: 404 });
+  const navigate = useNavigate();
   return (
     <div style={page}>
-      <h4>Products</h4>
+      <h4>products</h4>
       <ul>
         {products.map((p) => (
-          <div key={p.id}>
-            <li>
-              {p.title} {p.price}
-            </li>
-            <button
-              style={btn}
-              onClick={() => {
-                const error = err(p.id)
-                
-              }}
-            >
+          <li key={p.id}>
+            {p.title} {p.price}
+            <button style={btn} onClick={() => navigate(p.id)}>
               add to cart
             </button>
-          </div>
+          </li>
         ))}
+        {/* not found product */}
+        <li key={"5"}>
+          rx580 100$
+          <button style={btn} onClick={() => navigate("5")}>
+            add to cart
+          </button>
+        </li>
       </ul>
     </div>
   );
@@ -147,10 +144,15 @@ const ProductsPage = () => {
 
 const ProductPage = () => {
   const product = useLoaderData();
+  /* const err = (id) =>
+    id === "3"
+      ? new Response("Gone", { status: 410 })
+      : new Response("product not found", { status: 404 });
+  err(id); */
   return (
     <div style={page}>
       <p>
-        {product.title} {product.price}
+        _| {product.title} -- {product.price}$
       </p>
     </div>
   );
@@ -163,6 +165,11 @@ const router = createBrowserRouter([
     element: <MainLayout />,
     errorElement: <MainLayoutError />,
     children: [
+      {
+        index: true,
+        element: <Home />,
+        loader: homeLoader,
+      },
       {
         path: "products",
         loader: productsLoader,
