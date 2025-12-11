@@ -27,7 +27,7 @@ const DB = {
 // mock network delay
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// lazy imports: load just we ui needed
+// lazy imports: load just ui needed
 // lets cmnt that bcs it just for learning
 /* 
 const Home = lazy(() => import("./Home"));
@@ -36,20 +36,53 @@ const ProductsPage = lazy(() => import("./Home"));
 const ProductPage = lazy(() => import("./ProductPage")); 
 */
 
+// the heavy ui should use lazy import like 
+// const HeavyAnalyticsPanel = lazy(() => import("./HeavyAnalyticsPanel"));
+// but for learn purpose lets mock it
+const HeavyAnalyticsPanel = async ({ cartId }) => {
+  delay(300);
+  return <p>[HeavyAnalyticsPanel with id {cartId}]</p>;
+};
+
 const Home = () => <h4>🏠 home page</h4>; // main entry
 const ProductsLayout = () => <h4>📦 products layout</h4>; // wrapper section
 const ProductsPage = () => <h4>🛍️ products page</h4>; // list of items
-const ProductPage = () => <h4>🛒 product page</h4>; // single item
+const ProductPage = () => {
+  const p = useLoaderData();
+  const [preload, setPreload] = useState(false);
+
+  return (
+    <div>
+      <p>
+        light ui → model: {p.model} price: {p.price}
+      </p>
+      {p.heavy ? (
+        <div>
+          <p>this product have heavy</p>
+
+          <NavLink onMouseEnter={() => setPreload((prev) => !prev)}>
+            {toggleUi ? "hide" : "show"} heavy ui
+          </NavLink>
+          {preload ? (
+            <Loading>
+              <HeavyAnalyticsPanel cartId={p.id} />
+            </Loading>
+          ) : undefined}
+        </div>
+      ) : undefined}
+    </div>
+  );
+};
 
 // loaders
 const productsLoader = async () => {
   await delay(300);
-  return DB.products;
+  return DB.cars;
 };
 
 const productLoader = async ({ params }) => {
   await delay(300);
-  return DB.products.find((p) => p.id === params.id);
+  return DB.cars.find((p) => p.id === params.id);
 };
 
 const Loading = ({ children }) => (
