@@ -10,12 +10,17 @@ micro-split lazy loading,
 prefetching (hover preload)
 */
 
-import React, { Suspense, useState, lazy } from "react";
-import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
-import { useNavigate, useLoaderData, NavLink } from "react-router-dom";
+import React, { Suspense, useState, lazy, useRef, useEffect } from "react";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Outlet,
+  useNavigate,
+} from "react-router-dom";
+import { useLoaderData, NavLink } from "react-router-dom";
 
 // mock db
-// heavy mean this car have a complex preview ui
+// heavy: mean this car have a complex preview ui
 const DB = {
   cars: [
     { id: "1", model: "BMW M5", price: 90000, heavy: true },
@@ -24,55 +29,12 @@ const DB = {
   ],
 };
 
+/* helpers */
 // mock network delay
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
-
-// lazy imports: load just ui needed
-// lets cmnt that bcs it just for learning
-/* 
-const Home = lazy(() => import("./Home"));
-const ProductsLayout = lazy(() => import("./ProductsLayout"));
-const ProductsPage = lazy(() => import("./Home"));
-const ProductPage = lazy(() => import("./ProductPage")); 
-*/
-
-// the heavy ui should use lazy import like 
-// const HeavyAnalyticsPanel = lazy(() => import("./HeavyAnalyticsPanel"));
-// but for learn purpose lets mock it
-const HeavyAnalyticsPanel = async ({ cartId }) => {
-  delay(300);
-  return <p>[HeavyAnalyticsPanel with id {cartId}]</p>;
-};
-
-const Home = () => <h4>🏠 home page</h4>; // main entry
-const ProductsLayout = () => <h4>📦 products layout</h4>; // wrapper section
-const ProductsPage = () => <h4>🛍️ products page</h4>; // list of items
-const ProductPage = () => {
-  const p = useLoaderData();
-  const [preload, setPreload] = useState(false);
-
-  return (
-    <div>
-      <p>
-        light ui → model: {p.model} price: {p.price}
-      </p>
-      {p.heavy ? (
-        <div>
-          <p>this product have heavy</p>
-
-          <NavLink onMouseEnter={() => setPreload((prev) => !prev)}>
-            {toggleUi ? "hide" : "show"} heavy ui
-          </NavLink>
-          {preload ? (
-            <Loading>
-              <HeavyAnalyticsPanel cartId={p.id} />
-            </Loading>
-          ) : undefined}
-        </div>
-      ) : undefined}
-    </div>
-  );
-};
+const Loading = ({ children }) => (
+  <Suspense fallback={<div>loading ...</div>}>{children}</Suspense>
+);
 
 // loaders
 const productsLoader = async () => {
@@ -85,16 +47,115 @@ const productLoader = async ({ params }) => {
   return DB.cars.find((p) => p.id === params.id);
 };
 
-const Loading = ({ children }) => (
-  <Suspense fallback={<div>loading ...</div>}>{children}</Suspense>
+// the task normaly want that
+// route-level lazy loading (The page loads only when the user opens that route)
+/* const Home = lazy(() => import("./Home"));
+const ProductsLayout = lazy(() => import("./ProductsLayout"));
+const ProductsPage = lazy(() => import("./ProductsPage"));
+const ProductPage = lazy(() => import("./ProductPage")); */
+
+const Home = () => <h4>🏠 home page</h4>;
+const ProductsLayout = () => <h4>📦 products layout</h4>;
+
+const ProductsPage = () => {
+  const data = useLoaderData();
+  const navigate = useNavigate();
+  return (
+    <div>
+      <h4>🛍️ products page</h4>
+      <ul>
+        {data.map((c) => (
+          <li key={c.id}>
+            <p>
+              {c.model} {c.price}
+            </p>
+            <button onClick={() => navigate(c.id)}>discover the car</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+const HeavyAnalyticsPanelComp = ({ cartId }) => (
+  <p>[HeavyAnalyticsPanel with id {cartId}]</p>
 );
+
+const ProductPage = () => {
+  const p = useLoaderData();
+  const [show, setShow] = useState(false);
+  const isHeavyUiLoadedBefore = useRef(false);
+  const firstRender = useRef(true);
+  const [HeavyAnalyticsPanel, setHeavyAnalyticsPanel] = useState(undefined);
+
+  useEffect(() => {
+    if (firstRender) {
+      // to prevent first render
+      firstRender.current = false;
+      return;
+    }
+    if (isHeavyUiLoadedBefore.current) {
+      return;
+    }
+    // micro-split lazy loading (heavy component loads only when needed)
+    // the task nomaly want
+    // setHeavyAnalyticsPanel(lazy(() => import("./HeavyAnalyticsPanel")));
+    console.log("micro-split lazy loading ...");
+    setHeavyAnalyticsPanel(HeavyAnalyticsPanelComp);
+    isHeavyUiLoadedBefore.current = true;
+  }, [show]);
+
+  return (
+    <div>
+      <p>
+        light ui → model: {p.model} price: {p.price}
+      </p>
+      {p.heavy ? (
+        <div>
+          <p>this product have heavy</p>
+
+          <button onClick={() => setShow((prev) => !prev)}>
+            {show ? "hide" : "show"} heavy ui
+          </button>
+
+          {show ? (
+            <Loading>
+              <HeavyAnalyticsPanel cartId={p.id} />
+            </Loading>
+          ) : undefined}
+        </div>
+      ) : undefined}
+    </div>
+  );
+};
 
 const MainLayout = () => (
   <div style={{ padding: 20 }}>
     <h4>level 8 practice</h4>
     <nav style={{ display: "flex", gap: 16 }}>
-      <NavLink to="/">home</NavLink>
-      <NavLink to="/products">products</NavLink>
+      {/* lets create a prefetching */}
+      {/* <NavLink to="/" onMouseEnter={() => import("./Home")}>
+        home
+      </NavLink>
+      <NavLink
+        to="/products"
+        onMouseEnter={() => {
+          import("./ProductsPage");
+          import("./ProductsLayout");
+        }}
+      >
+        products
+      </NavLink> */}
+      {/* lets mock no imports */}
+      <NavLink to="/" onMouseEnter={() => console.log("prefetching...")}>
+        home
+      </NavLink>
+      <NavLink
+        to="/products"
+        onMouseEnter={() => console.log("prefetching...")}
+      >
+        products
+      </NavLink>
     </nav>
     <hr />
     <Outlet />
