@@ -3,6 +3,7 @@ import { fallback } from "../../sharedStyles";
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Suspense boundaries
 const Loading = ({ children }) => (
   <Suspense fallback={<div style={fallback}>loading component ...</div>}>
     {children}

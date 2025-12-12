@@ -1,8 +1,8 @@
 import { delay } from "./utils";
 import { Loading } from "./utils";
 import { useLoaderData } from "react-router-dom";
-import React, { useState, lazy, useRef, useEffect } from "react";
 import { page, btn, heavyContainer } from "../../sharedStyles";
+import React, { useState, lazy, useRef, useEffect } from "react";
 
 /* await delay(1000); */
 

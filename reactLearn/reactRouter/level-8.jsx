@@ -9,12 +9,11 @@ conditional lazy loading,
 micro-split lazy loading,
 prefetching (hover preload)
 */
-
-import React, { Suspense, lazy } from "react";
-import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import { NavLink } from "react-router-dom";
+import React, { Suspense, lazy } from "react";
 import { Loading } from "./helpers/lvl8/utils";
 import { layout, header, nav, link, active, container } from "./sharedStyles";
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 
 // mock db
 // heavy: mean this car have a complex preview ui
@@ -38,9 +37,9 @@ const productLoader = async ({ params }) => {
 // route-level lazy loading
 // (The page loads only when the user opens that route)
 const Home = lazy(() => import("./helpers/lvl8/Home"));
-const ProductsLayout = lazy(() => import("./helpers/lvl8/ProductsLayout"));
-const ProductsPage = lazy(() => import("./helpers/lvl8/ProductsPage"));
 const ProductPage = lazy(() => import("./helpers/lvl8/ProductPage"));
+const ProductsPage = lazy(() => import("./helpers/lvl8/ProductsPage"));
+const ProductsLayout = lazy(() => import("./helpers/lvl8/ProductsLayout"));
 
 const MainLayout = () => (
   <div style={layout}>
@@ -88,6 +87,7 @@ const router = createBrowserRouter([
   {
     path: "/",
     lazy: () => ({
+      // route-level lazy loading
       element: (
         <Loading>
           <MainLayout />
