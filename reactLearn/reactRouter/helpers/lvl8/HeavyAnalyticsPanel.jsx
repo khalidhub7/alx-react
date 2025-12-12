@@ -2,7 +2,7 @@ import React from "react";
 import { delay } from "./utils";
 import { heavyPanel } from "../../sharedStyles";
 
-await delay(2000);
+await delay(1000);
 
 const HeavyAnalyticsPanelComp = ({ cartId }) => (
   <div style={heavyPanel}>

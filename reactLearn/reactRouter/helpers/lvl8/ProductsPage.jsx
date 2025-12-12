@@ -1,22 +1,18 @@
-import { useLoaderData, useNavigate } from "react-router-dom";
-import {
-  page,
-  btn,
-  productList,
-  productCard,
-  productTitleText,
-} from "../../sharedStyles";
 import React from "react";
 import { delay } from "./utils";
+import { page, btn, productList } from "../../sharedStyles";
+import { useLoaderData, useNavigate } from "react-router-dom";
+import { productCard, productTitleText } from "../../sharedStyles";
 
-await delay(2000);
+await delay(1000);
+
 const ProductsPage = () => {
   const data = useLoaderData();
   const navigate = useNavigate();
 
   return (
     <div style={page}>
-      <h3>🛍️ Products List</h3>
+      <h3>🛍️ products list</h3>
 
       <ul style={productList}>
         {data.map((c) => (

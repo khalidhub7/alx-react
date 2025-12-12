@@ -1,6 +1,5 @@
-import { Outlet } from "react-router-dom";
-import { delay } from "./utils";
 import React from "react";
+import { Outlet } from "react-router-dom";
 import { productsLayoutWrapper } from "../../sharedStyles";
 
 const ProductsLayout = () => (

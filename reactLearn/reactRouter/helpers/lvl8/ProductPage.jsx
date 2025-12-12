@@ -1,10 +1,10 @@
-import React, { useState, lazy, useRef, useEffect } from "react";
-import { useLoaderData } from "react-router-dom";
-import { page, btn, heavyContainer } from "../../sharedStyles";
-import { Loading } from "./utils";
 import { delay } from "./utils";
+import { Loading } from "./utils";
+import { useLoaderData } from "react-router-dom";
+import React, { useState, lazy, useRef, useEffect } from "react";
+import { page, btn, heavyContainer } from "../../sharedStyles";
 
-await delay(2000);
+/* await delay(1000); */
 
 const ProductPage = () => {
   const p = useLoaderData();
@@ -34,7 +34,7 @@ const ProductPage = () => {
 
       {p.heavy ? (
         <div style={heavyContainer}>
-          <p>This product has a heavy UI preview</p>
+          <p>this product has a heavy UI preview</p>
 
           <button style={btn} onClick={() => setShow((prev) => !prev)}>
             {show ? "hide" : "show"} heavy ui
