@@ -13,7 +13,7 @@ prefetching (hover preload)
 import React, { Suspense, lazy } from "react";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import { NavLink } from "react-router-dom";
-import { delay, Loading } from "./helpers/lvl8/utils";
+import { Loading } from "./helpers/lvl8/utils";
 import { layout, header, nav, link, active, container } from "./sharedStyles";
 
 // mock db
@@ -58,6 +58,7 @@ const MainLayout = () => (
         >
           home
         </NavLink>
+
         <NavLink
           to="/products"
           onMouseEnter={() => {

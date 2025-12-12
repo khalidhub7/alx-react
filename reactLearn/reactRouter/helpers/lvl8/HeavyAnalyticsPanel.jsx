@@ -1,16 +1,11 @@
 import React from "react";
 import { delay } from "./utils";
+import { heavyPanel } from "../../sharedStyles";
 
-await delay(2000)
+await delay(2000);
+
 const HeavyAnalyticsPanelComp = ({ cartId }) => (
-  <div
-    style={{
-      marginTop: "1rem",
-      padding: "1rem",
-      background: "#fff",
-      borderRadius: "6px",
-    }}
-  >
+  <div style={heavyPanel}>
     <p>[HeavyAnalyticsPanel with id {cartId}]</p>
   </div>
 );

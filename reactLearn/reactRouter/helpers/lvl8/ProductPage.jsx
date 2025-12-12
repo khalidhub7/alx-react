@@ -1,10 +1,10 @@
 import React, { useState, lazy, useRef, useEffect } from "react";
 import { useLoaderData } from "react-router-dom";
-import { page, btn } from "../../sharedStyles";
+import { page, btn, heavyContainer } from "../../sharedStyles";
 import { Loading } from "./utils";
 import { delay } from "./utils";
 
-await delay(2000)
+await delay(2000);
 
 const ProductPage = () => {
   const p = useLoaderData();
@@ -15,13 +15,11 @@ const ProductPage = () => {
 
   useEffect(() => {
     if (firstRender.current) {
-      // to prevent first render
       firstRender.current = false;
       return;
     }
     if (isHeavyUiLoadedBefore.current) return;
 
-    // micro-split lazy loading (heavy component loads only when needed)
     console.log("micro-split lazy loading ...");
     setHeavyAnalyticsPanel(lazy(() => import("./HeavyAnalyticsPanel")));
     isHeavyUiLoadedBefore.current = true;
@@ -35,7 +33,7 @@ const ProductPage = () => {
       </p>
 
       {p.heavy ? (
-        <div style={{ marginTop: "1rem" }}>
+        <div style={heavyContainer}>
           <p>This product has a heavy UI preview</p>
 
           <button style={btn} onClick={() => setShow((prev) => !prev)}>
