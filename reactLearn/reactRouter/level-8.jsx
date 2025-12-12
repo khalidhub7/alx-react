@@ -35,8 +35,11 @@ const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 const Loading = ({ children }) => (
   <Suspense fallback={<div>loading ...</div>}>{children}</Suspense>
 );
+const HeavyAnalyticsPanelComp = ({ cartId }) => (
+  <p>[HeavyAnalyticsPanel with id {cartId}]</p>
+);
 
-// loaders
+/*  loaders */
 const productsLoader = async () => {
   await delay(300);
   return DB.cars;
@@ -47,13 +50,16 @@ const productLoader = async ({ params }) => {
   return DB.cars.find((p) => p.id === params.id);
 };
 
-// the task normaly want that
+// the task normally want that below commented code
 // route-level lazy loading (The page loads only when the user opens that route)
-/* const Home = lazy(() => import("./Home"));
+/*
+const Home = lazy(() => import("./Home"));
 const ProductsLayout = lazy(() => import("./ProductsLayout"));
 const ProductsPage = lazy(() => import("./ProductsPage"));
-const ProductPage = lazy(() => import("./ProductPage")); */
+const ProductPage = lazy(() => import("./ProductPage"));
+*/
 
+// but i mock it with that code for learn purpose
 const Home = () => <h4>🏠 home page</h4>;
 const ProductsLayout = () => <h4>📦 products layout</h4>;
 
@@ -77,10 +83,6 @@ const ProductsPage = () => {
   );
 };
 
-const HeavyAnalyticsPanelComp = ({ cartId }) => (
-  <p>[HeavyAnalyticsPanel with id {cartId}]</p>
-);
-
 const ProductPage = () => {
   const p = useLoaderData();
   const [show, setShow] = useState(false);
@@ -98,8 +100,9 @@ const ProductPage = () => {
       return;
     }
     // micro-split lazy loading (heavy component loads only when needed)
-    // the task nomaly want
+    // the task normally want that below commented code
     // setHeavyAnalyticsPanel(lazy(() => import("./HeavyAnalyticsPanel")));
+    // but i mock it with that code for learn purpose
     console.log("micro-split lazy loading ...");
     setHeavyAnalyticsPanel(HeavyAnalyticsPanelComp);
     isHeavyUiLoadedBefore.current = true;
@@ -133,6 +136,7 @@ const MainLayout = () => (
   <div style={{ padding: 20 }}>
     <h4>level 8 practice</h4>
     <nav style={{ display: "flex", gap: 16 }}>
+      {/* the task normally want that below commented code */}
       {/* lets create a prefetching */}
       {/* <NavLink to="/" onMouseEnter={() => import("./Home")}>
         home
@@ -146,6 +150,8 @@ const MainLayout = () => (
       >
         products
       </NavLink> */}
+
+      {/* but i mock it with that code for learn purpose */}
       {/* lets mock no imports */}
       <NavLink to="/" onMouseEnter={() => console.log("prefetching...")}>
         home
