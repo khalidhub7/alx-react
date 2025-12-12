@@ -10,14 +10,11 @@ micro-split lazy loading,
 prefetching (hover preload)
 */
 
-import React, { Suspense, useState, lazy, useRef, useEffect } from "react";
-import {
-  createBrowserRouter,
-  RouterProvider,
-  Outlet,
-  useNavigate,
-} from "react-router-dom";
-import { useLoaderData, NavLink } from "react-router-dom";
+import React, { Suspense, lazy } from "react";
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import { delay, Loading } from "./helpers/lvl8/utils";
+import { layout, header, nav, link, active, container } from "./sharedStyles";
 
 // mock db
 // heavy: mean this car have a complex preview ui
@@ -29,142 +26,59 @@ const DB = {
   ],
 };
 
-/* helpers */
-// mock network delay
-const delay = (ms) => new Promise((r) => setTimeout(r, ms));
-const Loading = ({ children }) => (
-  <Suspense fallback={<div>loading ...</div>}>{children}</Suspense>
-);
-const HeavyAnalyticsPanelComp = ({ cartId }) => (
-  <p>[HeavyAnalyticsPanel with id {cartId}]</p>
-);
-
 /*  loaders */
 const productsLoader = async () => {
-  await delay(300);
   return DB.cars;
 };
 
 const productLoader = async ({ params }) => {
-  await delay(300);
   return DB.cars.find((p) => p.id === params.id);
 };
 
-// the task normally want that below commented code
-// route-level lazy loading (The page loads only when the user opens that route)
-/*
-const Home = lazy(() => import("./Home"));
-const ProductsLayout = lazy(() => import("./ProductsLayout"));
-const ProductsPage = lazy(() => import("./ProductsPage"));
-const ProductPage = lazy(() => import("./ProductPage"));
-*/
-
-// but i mock it with that code for learn purpose
-const Home = () => <h4>🏠 home page</h4>;
-const ProductsLayout = () => <h4>📦 products layout</h4>;
-
-const ProductsPage = () => {
-  const data = useLoaderData();
-  const navigate = useNavigate();
-  return (
-    <div>
-      <h4>🛍️ products page</h4>
-      <ul>
-        {data.map((c) => (
-          <li key={c.id}>
-            <p>
-              {c.model} {c.price}
-            </p>
-            <button onClick={() => navigate(c.id)}>discover the car</button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-};
-
-const ProductPage = () => {
-  const p = useLoaderData();
-  const [show, setShow] = useState(false);
-  const isHeavyUiLoadedBefore = useRef(false);
-  const firstRender = useRef(true);
-  const [HeavyAnalyticsPanel, setHeavyAnalyticsPanel] = useState(undefined);
-
-  useEffect(() => {
-    if (firstRender) {
-      // to prevent first render
-      firstRender.current = false;
-      return;
-    }
-    if (isHeavyUiLoadedBefore.current) {
-      return;
-    }
-    // micro-split lazy loading (heavy component loads only when needed)
-    // the task normally want that below commented code
-    // setHeavyAnalyticsPanel(lazy(() => import("./HeavyAnalyticsPanel")));
-    // but i mock it with that code for learn purpose
-    console.log("micro-split lazy loading ...");
-    setHeavyAnalyticsPanel(HeavyAnalyticsPanelComp);
-    isHeavyUiLoadedBefore.current = true;
-  }, [show]);
-
-  return (
-    <div>
-      <p>
-        light ui → model: {p.model} price: {p.price}
-      </p>
-      {p.heavy ? (
-        <div>
-          <p>this product have heavy</p>
-
-          <button onClick={() => setShow((prev) => !prev)}>
-            {show ? "hide" : "show"} heavy ui
-          </button>
-
-          {show ? (
-            <Loading>
-              <HeavyAnalyticsPanel cartId={p.id} />
-            </Loading>
-          ) : undefined}
-        </div>
-      ) : undefined}
-    </div>
-  );
-};
+// route-level lazy loading
+// (The page loads only when the user opens that route)
+const Home = lazy(() => import("./helpers/lvl8/Home"));
+const ProductsLayout = lazy(() => import("./helpers/lvl8/ProductsLayout"));
+const ProductsPage = lazy(() => import("./helpers/lvl8/ProductsPage"));
+const ProductPage = lazy(() => import("./helpers/lvl8/ProductPage"));
 
 const MainLayout = () => (
-  <div style={{ padding: 20 }}>
-    <h4>level 8 practice</h4>
-    <nav style={{ display: "flex", gap: 16 }}>
-      {/* the task normally want that below commented code */}
-      {/* lets create a prefetching */}
-      {/* <NavLink to="/" onMouseEnter={() => import("./Home")}>
-        home
-      </NavLink>
-      <NavLink
-        to="/products"
-        onMouseEnter={() => {
-          import("./ProductsPage");
-          import("./ProductsLayout");
-        }}
-      >
-        products
-      </NavLink> */}
+  <div style={layout}>
+    {/* header */}
+    <header style={header}>
+      <nav style={nav}>
+        {/* lets create a prefetching */}
+        <NavLink
+          to="/"
+          onMouseEnter={() => {
+            console.log("importing the Home comp ...");
+            import("./helpers/lvl8/Home");
+          }}
+          style={({ isActive }) => ({ ...link, ...active(isActive) })}
+        >
+          home
+        </NavLink>
+        <NavLink
+          to="/products"
+          onMouseEnter={() => {
+            console.log(
+              "importing the ProductsPage and ProductsLayout comps ...",
+            );
 
-      {/* but i mock it with that code for learn purpose */}
-      {/* lets mock no imports */}
-      <NavLink to="/" onMouseEnter={() => console.log("prefetching...")}>
-        home
-      </NavLink>
-      <NavLink
-        to="/products"
-        onMouseEnter={() => console.log("prefetching...")}
-      >
-        products
-      </NavLink>
-    </nav>
-    <hr />
-    <Outlet />
+            import("./helpers/lvl8/ProductsPage");
+            import("./helpers/lvl8/ProductsLayout");
+          }}
+          style={({ isActive }) => ({ ...link, ...active(isActive) })}
+        >
+          products
+        </NavLink>
+      </nav>
+    </header>
+
+    {/* container */}
+    <main style={container}>
+      <Outlet />
+    </main>
   </div>
 );
 
@@ -198,7 +112,6 @@ const router = createBrowserRouter([
               <ProductsLayout />
             </Loading>
           ),
-          loader: productsLoader,
         }),
 
         children: [
@@ -211,6 +124,7 @@ const router = createBrowserRouter([
                 </Loading>
               ),
             }),
+            loader: productsLoader,
           },
           {
             path: ":id",
@@ -220,8 +134,8 @@ const router = createBrowserRouter([
                   <ProductPage />
                 </Loading>
               ),
-              loader: productLoader,
             }),
+            loader: productLoader,
           },
         ],
       },
@@ -232,3 +146,5 @@ const router = createBrowserRouter([
 const App = () => {
   return <RouterProvider router={router} />;
 };
+
+export default App;
