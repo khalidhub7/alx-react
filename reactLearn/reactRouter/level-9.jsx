@@ -37,9 +37,9 @@ const Auth = {
 };
 
 /* loaders */
-const authLoader = () => Auth.getUser();
+const authLoader = () => ({ user: Auth.getUser() });
 const requireAuth = ({ request }) => {
-  const user = authLoader();
+  const user = authLoader().user;
   if (user) {
     return null;
   }
@@ -49,21 +49,26 @@ const requireAuth = ({ request }) => {
 };
 
 const requireAdmin = () => {
-  const user = authLoader();
-  if (user && user.role !== "admin") {
+  const user = authLoader().user;
+  if (!user) {
+    const path = new URL(request.url).pathname;
+    return redirect(`/login?redirectTo=${path}`);
+  }
+  if (user.role !== "admin") {
     return redirect("/unauthorized");
   }
+  return null;
 };
 
 /* actions */
-const loginAction = ({ request }) => {
-  const fd = request.formData();
+const loginAction = async ({ request }) => {
+  const fd = await request.formData();
   const email = fd.get("email");
   if (!email) {
     return null;
   }
   Auth.login(email);
-  const path = new URL(request.url).searchParams("redirectTo");
+  const path = new URL(request.url).searchParams.get("redirectTo");
   return redirect(path || "/");
 };
 
@@ -132,6 +137,7 @@ const router = createBrowserRouter([
       {
         path: "dashboard",
         element: <DashboardLayout />,
+        loader: requireAuth,
         children: [
           { index: true, element: <DashboardHome /> },
           {
