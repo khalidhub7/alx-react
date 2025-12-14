@@ -13,8 +13,9 @@ auth design patterns:
 
 import React from "react";
 import { page, layout, header, nav, link } from "./sharedStyles";
+import { NavLink, redirect, useLoaderData } from "react-router-dom";
+import { Form, useRouteError, useNavigate } from "react-router-dom";
 import { active, container, btn, form, input } from "./sharedStyles";
-import { NavLink, redirect, useLoaderData, Form } from "react-router-dom";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 
 // mock db
@@ -87,6 +88,20 @@ const logoutAction = () => {
 
 /* components */
 
+const ErrElm = () => {
+  const err = useRouteError();
+  const navigate = useNavigate();
+
+  return (
+    <div>
+      <h4 style={page}>err: {err.message}</h4>
+      <button style={btn} onClick={() => navigate("/")}>
+        go back home
+      </button>
+    </div>
+  );
+};
+
 const Layout = () => {
   const { user } = useLoaderData();
 
@@ -147,7 +162,17 @@ const DashboardLayout = () => <Outlet />;
 const Home = () => <h4 style={page}>home (public)</h4>;
 const Products = () => <h4 style={page}>products (public)</h4>;
 const Checkout = () => <h4 style={page}>checkout (protected)</h4>;
-const DashboardHome = () => <h4 style={page}>user dashboard</h4>;
+const DashboardHome = () => {
+  const navigate = useNavigate();
+  return (
+    <div>
+      <h4 style={page}>user dashboard</h4>
+      <button style={btn} onClick={() => navigate("admin-panel")}>
+        see admin panel
+      </button>
+    </div>
+  );
+};
 const AdminPanel = () => <h4 style={page}>admin panel</h4>;
 const Unauthorized = () => <h4 style={page}>403 — unauthorized</h4>;
 
@@ -158,12 +183,15 @@ const Login = () => (
   </Form>
 );
 
+const Logout = () => <h4 style={page}>logout</h4>;
+
 // router config
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Layout />,
     loader: authLoader,
+    errorElement: <ErrElm />,
     children: [
       { index: true, element: <Home /> },
       { path: "products", element: <Products /> },
