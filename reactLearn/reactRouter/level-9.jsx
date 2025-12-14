@@ -13,8 +13,8 @@ auth design patterns:
 
 import React from "react";
 import { page, layout, header, nav, link } from "./sharedStyles";
-import { NavLink, redirect, useLoaderData } from "react-router-dom";
 import { active, container, btn, form, input } from "./sharedStyles";
+import { NavLink, redirect, useLoaderData, Form } from "react-router-dom";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 
 // mock db
@@ -40,9 +40,14 @@ const Auth = {
 };
 
 /* loaders */
-const authLoader = () => ({ user: Auth.getUser() });
+const authLoader = () => {
+  const user = Auth.getUser();
+  console.log(`parent loader user <${user || undefined}>`);
+  return { user };
+};
 
 const requireAuth = ({ request }) => {
+  console.log("requireAuth loader called");
   const user = Auth.getUser();
   if (user) return null;
 
@@ -67,6 +72,7 @@ const requireAdmin = () => {
 const loginAction = async ({ request }) => {
   const fd = await request.formData();
   const email = fd.get("email");
+  console.log(email);
   if (!email) return null;
 
   Auth.login(email);
@@ -138,7 +144,6 @@ const Layout = () => {
 };
 
 const DashboardLayout = () => <Outlet />;
-
 const Home = () => <h4 style={page}>home (public)</h4>;
 const Products = () => <h4 style={page}>products (public)</h4>;
 const Checkout = () => <h4 style={page}>checkout (protected)</h4>;
@@ -147,10 +152,10 @@ const AdminPanel = () => <h4 style={page}>admin panel</h4>;
 const Unauthorized = () => <h4 style={page}>403 — unauthorized</h4>;
 
 const Login = () => (
-  <form method="post" style={form}>
+  <Form method="post" style={form}>
     <input name="email" placeholder="ur email" style={input} />
     <button style={btn}>login</button>
-  </form>
+  </Form>
 );
 
 // router config
