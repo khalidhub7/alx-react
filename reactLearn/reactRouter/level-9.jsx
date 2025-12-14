@@ -48,7 +48,7 @@ const requireAuth = ({ request }) => {
   return redirect(`/login?redirectTo=${pathname}`);
 };
 
-const requireAdmin = () => {
+const requireAdmin = ({ request }) => {
   const user = Auth.getUser();
   if (!user) {
     const path = new URL(request.url).pathname;
