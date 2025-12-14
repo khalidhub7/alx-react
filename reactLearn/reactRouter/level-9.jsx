@@ -1,3 +1,4 @@
+// level-9.jsx
 // REACT ROUTER MASTERY — LEVEL 9 PRACTICE
 // use only Level 9 learned concepts
 /* 
@@ -11,8 +12,10 @@ auth design patterns:
 */
 
 import React from "react";
-import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
+import { page, layout, header, nav, link } from "./sharedStyles";
 import { NavLink, redirect, useLoaderData } from "react-router-dom";
+import { active, container, btn, form, input } from "./sharedStyles";
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 
 // mock db
 let DB = {
@@ -38,22 +41,22 @@ const Auth = {
 
 /* loaders */
 const authLoader = () => ({ user: Auth.getUser() });
+
 const requireAuth = ({ request }) => {
-  const user = authLoader().user;
-  if (user) {
-    return null;
-  }
+  const user = Auth.getUser();
+  if (user) return null;
+
   const pathname = new URL(request.url).pathname;
   // redirect-back pattern
   return redirect(`/login?redirectTo=${pathname}`);
 };
 
-const requireAdmin = ({ request }) => {
+const requireAdmin = () => {
   const user = Auth.getUser();
-  if (!user) {
-    const path = new URL(request.url).pathname;
-    return redirect(`/login?redirectTo=${path}`);
-  }
+
+  // the user is always defined
+  // otherwise the parent loader would redirect
+  // bcs parent loaders run before child loaders
   if (user.role !== "admin") {
     return redirect("/unauthorized");
   }
@@ -64,9 +67,8 @@ const requireAdmin = ({ request }) => {
 const loginAction = async ({ request }) => {
   const fd = await request.formData();
   const email = fd.get("email");
-  if (!email) {
-    return null;
-  }
+  if (!email) return null;
+
   Auth.login(email);
   const path = new URL(request.url).searchParams.get("redirectTo");
   return redirect(path || "/");
@@ -83,40 +85,71 @@ const Layout = () => {
   const { user } = useLoaderData();
 
   return (
-    <div>
-      <nav>
-        <NavLink to="/">home</NavLink>
-        {" | "}
-        <NavLink to="/products">products</NavLink>
-        {" | "}
-        <NavLink to="/checkout">checkout</NavLink>
-        {" | "}
-        <NavLink to="/dashboard">dashboard</NavLink>
-        {" | "}
-        {user ? (
-          <NavLink to="/logout">logout</NavLink>
-        ) : (
-          <NavLink to="/login">login</NavLink>
-        )}
-      </nav>
-      <hr />
-      <Outlet />
+    <div style={layout}>
+      <header style={header}>
+        <nav style={nav}>
+          <NavLink
+            to="/"
+            style={({ isActive }) => ({ ...link, ...active(isActive) })}
+          >
+            home
+          </NavLink>
+          <NavLink
+            to="/products"
+            style={({ isActive }) => ({ ...link, ...active(isActive) })}
+          >
+            products
+          </NavLink>
+          <NavLink
+            to="/checkout"
+            style={({ isActive }) => ({ ...link, ...active(isActive) })}
+          >
+            checkout
+          </NavLink>
+          <NavLink
+            to="/dashboard"
+            style={({ isActive }) => ({ ...link, ...active(isActive) })}
+          >
+            dashboard
+          </NavLink>
+          {user ? (
+            <NavLink
+              to="/logout"
+              style={({ isActive }) => ({ ...link, ...active(isActive) })}
+            >
+              logout
+            </NavLink>
+          ) : (
+            <NavLink
+              to="/login"
+              style={({ isActive }) => ({ ...link, ...active(isActive) })}
+            >
+              login
+            </NavLink>
+          )}
+        </nav>
+      </header>
+
+      <main style={container}>
+        <Outlet />
+      </main>
     </div>
   );
 };
 
 const DashboardLayout = () => <Outlet />;
-const Home = () => <h4>home (public)</h4>;
-const AdminPanel = () => <h4>admin panel</h4>;
-const Products = () => <h4>products (public)</h4>;
-const DashboardHome = () => <h4>user dashboard</h4>;
-const Checkout = () => <h4>checkout (protected)</h4>;
-const Unauthorized = () => <h4>403 — unauthorized</h4>;
+
+const Home = () => <h4 style={page}>home (public)</h4>;
+const Products = () => <h4 style={page}>products (public)</h4>;
+const Checkout = () => <h4 style={page}>checkout (protected)</h4>;
+const DashboardHome = () => <h4 style={page}>user dashboard</h4>;
+const AdminPanel = () => <h4 style={page}>admin panel</h4>;
+const Unauthorized = () => <h4 style={page}>403 — unauthorized</h4>;
 
 const Login = () => (
-  <form method="post">
-    <input name="email" placeholder="ur email" />
-    <button>login</button>
+  <form method="post" style={form}>
+    <input name="email" placeholder="ur email" style={input} />
+    <button style={btn}>login</button>
   </form>
 );
 
