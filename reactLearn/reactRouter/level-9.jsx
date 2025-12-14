@@ -12,10 +12,10 @@ auth design patterns:
 */
 
 import React from "react";
-import { page, layout, header, nav, link } from "./sharedStyles";
 import { NavLink, redirect, useLoaderData } from "react-router-dom";
 import { Form, useRouteError, useNavigate } from "react-router-dom";
-import { active, container, btn, form, input } from "./sharedStyles";
+import { page, layout, header, nav, linkButton } from "./sharedStyles";
+import { active, container, btn, form, input, link } from "./sharedStyles";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 
 // mock db
@@ -43,12 +43,12 @@ const Auth = {
 /* loaders */
 const authLoader = () => {
   const user = Auth.getUser();
-  console.log(`parent loader user <${user || undefined}>`);
+  // console.log(`parent loader user <${user || undefined}>`);
   return { user };
 };
 
 const requireAuth = ({ request }) => {
-  console.log("requireAuth loader called");
+  // console.log("requireAuth loader called");
   const user = Auth.getUser();
   if (user) return null;
 
@@ -134,12 +134,11 @@ const Layout = () => {
             dashboard
           </NavLink>
           {user ? (
-            <NavLink
-              to="/logout"
-              style={({ isActive }) => ({ ...link, ...active(isActive) })}
-            >
-              logout
-            </NavLink>
+            <Form method="post" action="/logout">
+              <button type="submit" style={linkButton}>
+                logout
+              </button>
+            </Form>
           ) : (
             <NavLink
               to="/login"
@@ -215,7 +214,7 @@ const router = createBrowserRouter([
       },
       { path: "login", element: <Login />, action: loginAction },
       { path: "unauthorized", element: <Unauthorized /> },
-      { path: "logout", action: logoutAction },
+      { path: "logout", element: <Logout />, action: logoutAction },
     ],
   },
 ]);
