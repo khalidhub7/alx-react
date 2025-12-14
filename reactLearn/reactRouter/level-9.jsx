@@ -48,6 +48,7 @@ const authLoader = () => {
 };
 
 const requireAuth = ({ request }) => {
+  // throw new Error('err from child')
   // console.log("requireAuth loader called");
   const user = Auth.getUser();
   if (user) return null;
@@ -172,7 +173,7 @@ const DashboardHome = () => {
     </div>
   );
 };
-const AdminPanel = () => <h4 style={page}>admin panel</h4>;
+const AdminPanel = () => <h4 style={page}>you are admin</h4>;
 const Unauthorized = () => <h4 style={page}>403 — unauthorized</h4>;
 
 const Login = () => (
@@ -181,8 +182,6 @@ const Login = () => (
     <button style={btn}>login</button>
   </Form>
 );
-
-const Logout = () => <h4 style={page}>logout</h4>;
 
 // router config
 const router = createBrowserRouter([
@@ -214,7 +213,7 @@ const router = createBrowserRouter([
       },
       { path: "login", element: <Login />, action: loginAction },
       { path: "unauthorized", element: <Unauthorized /> },
-      { path: "logout", element: <Logout />, action: logoutAction },
+      { path: "logout", action: logoutAction },
     ],
   },
 ]);
