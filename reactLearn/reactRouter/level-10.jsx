@@ -83,16 +83,27 @@ const ProductDetails = () => {
   const product = DB.find((p) => p.id === id);
   return (
     <div>
-      <h4>product details</h4>
-      <p>{product.name}</p>
-      <p>{product.price}</p>
-      <p>{product.category}</p>
+      {product ? (
+        <div>
+          <h4>product details</h4>
+          <p>{product.name}</p>
+          <p>{product.price}</p>
+          <p>{product.category}</p>
+        </div>
+      ) : (
+        <ProductsNotFound />
+      )}
     </div>
   );
 };
 
 const Cart = () => <h4>cart</h4>;
-const Orders = () => <h4>orders</h4>;
+const Orders = () => (
+  <div>
+    <h4>orders</h4>
+    <Outlet />
+  </div>
+);
 const AccountLayout = () => <Outlet />;
 const NotFound = () => <h4>404 — not found</h4>;
 const AccountHome = () => <h4>account home</h4>;
