@@ -13,67 +13,95 @@ advanced routing design patterns:
 - shallow URLs, deep UI
 */
 
-import React, { useEffect, useState } from "react";
-import { NavLink, useParams, useSearchParams, Route } from "react-router-dom";
+import React from "react";
+import { useSearchParams } from "react-router-dom";
+import { NavLink, useNavigate, useParams } from "react-router-dom";
+import { page, layout, header, nav, link, active } from "./sharedStyles";
+import { productsLayoutWrapper, productTitleText } from "./sharedStyles";
+import { container, productList, productCard, btn } from "./sharedStyles";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 
 const DB = [
-  { id: "p1", name: "Laptop", category: "electronics", price: 1200 },
   { id: "p2", name: "Headphones", category: "electronics", price: 200 },
   { id: "p3", name: "Shoes", category: "fashion", price: 150 },
 ];
 
 /* components */
 const MainLayout = () => (
-  <div>
-    <header>
-      <nav>
-        <NavLink to={"/"}>home</NavLink>
-        <NavLink to={"/products"}>products</NavLink>
-        <NavLink to={"/cart"}>cart</NavLink>
-        <NavLink to={"/account"}>account</NavLink>
+  <div style={layout}>
+    <header style={header}>
+      <nav style={nav}>
+        <NavLink
+          to="/"
+          style={({ isActive }) => ({ ...link, ...active(isActive) })}
+        >
+          home
+        </NavLink>
+        <NavLink
+          to="/products"
+          style={({ isActive }) => ({ ...link, ...active(isActive) })}
+        >
+          products
+        </NavLink>
+        <NavLink
+          to="/cart"
+          style={({ isActive }) => ({ ...link, ...active(isActive) })}
+        >
+          cart
+        </NavLink>
+        <NavLink
+          to="/account"
+          style={({ isActive }) => ({ ...link, ...active(isActive) })}
+        >
+          account
+        </NavLink>
       </nav>
     </header>
-    <main>
+    <main style={container}>
       <Outlet />
     </main>
   </div>
 );
 
 const ProductsLayout = () => (
-  <section>
-    <p>products</p>
-    <div>
-      <Outlet />
-    </div>
+  <section style={productsLayoutWrapper}>
+    <Outlet />
   </section>
 );
 
-const Home = () => <h4>home</h4>;
+const Home = () => <h4 style={page}>home</h4>;
 
 const ProductsList = () => {
-  const [params, _] = useSearchParams();
-  const [filtered, setFiltered] = useState(DB);
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
 
   const category = params.get("category") ?? "";
   const sort = params.get("sort");
-
-  useEffect(() => {
-    setFiltered(
-      DB.filter((p) => p.category.includes(category.toLowerCase())).sort(
-        (a, b) =>
-          sort === "price-asc" ? a.price - b.price : b.price - a.price,
-      ),
-    );
-  }, [category, sort]);
+  const filtered = DB.filter((p) =>
+    p.category.includes(category.toLowerCase()),
+  ).sort((a, b) =>
+    sort === "price-asc" ? a.price - b.price : b.price - a.price,
+  );
 
   return (
-    <ul>
+    <ul style={productList}>
       {filtered.map((p) => (
-        <li key={p.id}>
-          {p.name} -- {p.price}$
+        <li key={p.id} style={productCard}>
+          <p style={productTitleText}>
+            {p.name} {p.price}$
+          </p>
+          <button onClick={() => navigate(p.id)} style={btn}>
+            see
+          </button>
         </li>
       ))}
+
+      <li style={productCard}>
+        <p style={productTitleText}>Out of Stock Item — 0$</p>
+        <button onClick={() => navigate("out-of-stock")} style={btn}>
+          see
+        </button>
+      </li>
     </ul>
   );
 };
@@ -84,7 +112,7 @@ const ProductDetails = () => {
   return (
     <div>
       {product ? (
-        <div>
+        <div style={page}>
           <h4>product details</h4>
           <p>{product.name}</p>
           <p>{product.price}</p>
@@ -97,18 +125,20 @@ const ProductDetails = () => {
   );
 };
 
-const Cart = () => <h4>cart</h4>;
+const Cart = () => <h4 style={page}>cart</h4>;
+
 const Orders = () => (
-  <div>
+  <div style={page}>
     <h4>orders</h4>
     <Outlet />
   </div>
 );
+
 const AccountLayout = () => <Outlet />;
-const NotFound = () => <h4>404 — not found</h4>;
-const AccountHome = () => <h4>account home</h4>;
-const OrderDetails = () => <h4>order details</h4>;
-const ProductsNotFound = () => <h4>products — not found</h4>;
+const NotFound = () => <h4 style={page}>404 — not found</h4>;
+const AccountHome = () => <h4 style={page}>account home</h4>;
+const OrderDetails = () => <h4 style={page}>order details</h4>;
+const ProductsNotFound = () => <h4 style={page}>products — not found</h4>;
 
 // router config
 const router = createBrowserRouter([
@@ -135,12 +165,7 @@ const router = createBrowserRouter([
           {
             path: "orders",
             element: <Orders />,
-            children: [
-              {
-                path: ":id",
-                element: <OrderDetails />,
-              },
-            ],
+            children: [{ path: ":id", element: <OrderDetails /> }],
           },
         ],
       },
