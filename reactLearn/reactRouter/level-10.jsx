@@ -22,8 +22,8 @@ import { container, productList, productCard, btn } from "./sharedStyles";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 
 const DB = [
-  { id: "p2", name: "Headphones", category: "electronics", price: 200 },
-  { id: "p3", name: "Shoes", category: "fashion", price: 150 },
+  { id: "p1", name: "Headphones", category: "electronics", price: 200 },
+  { id: "p2", name: "Shoes", category: "fashion", price: 150 },
 ];
 
 /* components */
@@ -55,6 +55,12 @@ const MainLayout = () => (
         >
           account
         </NavLink>
+        <NavLink
+          to="/invalid-path"
+          style={({ isActive }) => ({ ...link, ...active(isActive) })}
+        >
+          take me out
+        </NavLink>
       </nav>
     </header>
     <main style={container}>
@@ -62,14 +68,12 @@ const MainLayout = () => (
     </main>
   </div>
 );
-
+const Home = () => <h4 style={page}>home</h4>;
 const ProductsLayout = () => (
   <section style={productsLayoutWrapper}>
     <Outlet />
   </section>
 );
-
-const Home = () => <h4 style={page}>home</h4>;
 
 const ProductsList = () => {
   const [params] = useSearchParams();
@@ -119,14 +123,26 @@ const ProductDetails = () => {
           <p>{product.category}</p>
         </div>
       ) : (
-        <ProductsNotFound />
+        <ProductNotFound />
       )}
     </div>
   );
 };
 
+const ProductNotFound = () => <h4 style={page}>product — not found</h4>;
 const Cart = () => <h4 style={page}>cart</h4>;
-
+const AccountLayout = () => <Outlet />;
+const AccountHome = () => {
+  const navigate = useNavigate();
+  return (
+    <div>
+      <h4 style={page}>account home</h4>
+      <button style={btn} onClick={() => navigate("orders/2")}>
+        see orders
+      </button>
+    </div>
+  );
+};
 const Orders = () => (
   <div style={page}>
     <h4>orders</h4>
@@ -134,11 +150,9 @@ const Orders = () => (
   </div>
 );
 
-const AccountLayout = () => <Outlet />;
-const NotFound = () => <h4 style={page}>404 — not found</h4>;
-const AccountHome = () => <h4 style={page}>account home</h4>;
 const OrderDetails = () => <h4 style={page}>order details</h4>;
-const ProductsNotFound = () => <h4 style={page}>products — not found</h4>;
+
+const NotFound = () => <h4 style={page}>404 — not found</h4>;
 
 // router config
 const router = createBrowserRouter([
@@ -153,7 +167,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <ProductsList /> },
           { path: ":id", element: <ProductDetails /> },
-          { path: "*", element: <ProductsNotFound /> },
+          { path: "*", element: <ProductNotFound /> },
         ],
       },
       { path: "cart", element: <Cart /> },
