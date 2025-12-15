@@ -76,6 +76,7 @@ const ProductsLayout = () => (
 );
 
 const ProductsList = () => {
+  // resource vs state
   const [params] = useSearchParams();
   const navigate = useNavigate();
 
@@ -167,19 +168,21 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <ProductsList /> },
           { path: ":id", element: <ProductDetails /> },
-          { path: "*", element: <ProductNotFound /> },
+          { path: "*", element: <ProductNotFound /> }, // splat routes
         ],
       },
       { path: "cart", element: <Cart /> },
       {
-        path: "account",
+        path: "account", // feature-based nesting
         element: <AccountLayout />,
         children: [
           { index: true, element: <AccountHome /> },
           {
             path: "orders",
-            element: <Orders />,
-            children: [{ path: ":id", element: <OrderDetails /> }],
+            children: [
+              { index: true, element: <Orders /> },
+              { path: ":id", element: <OrderDetails /> },
+            ],
           },
         ],
       },
