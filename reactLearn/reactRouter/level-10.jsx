@@ -103,6 +103,7 @@ const ProductsNotFound = () => <h4>products — not found</h4>;
 const router = createBrowserRouter([
   {
     path: "/",
+    element: <MainLayout />,
     children: [
       { index: true, element: <Home /> },
       {
@@ -121,7 +122,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <AccountHome /> },
           {
-            path: "/orders",
+            path: "orders",
             element: <Orders />,
             children: [
               {
