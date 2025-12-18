@@ -18,17 +18,9 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { useNavigation, NavLink } from "react-router-dom";
 import { Outlet, useLoaderData, Await, useNavigate } from "react-router-dom";
 
-import {
-  layout,
-  header,
-  nav,
-  link,
-  active,
-  container,
-  btn,
-  fallback,
-  page,
-} from "./sharedStyles";
+import { layout, header, nav, link } from "./sharedStyles";
+
+import { active, container, btn, fallback, page } from "./sharedStyles";
 
 /* helpers */
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -115,9 +107,7 @@ const AnalyticsPage = () => {
 
   return (
     <Suspense fallback={<div style={fallback}>loading ...</div>}>
-      <Await resolve={analytics}>
-        <p style={page}>visitors {analytics.visitors}</p>
-      </Await>
+      <p style={page}>visitors {analytics.visitors}</p>
     </Suspense>
   );
 };
