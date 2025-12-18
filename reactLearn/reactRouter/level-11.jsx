@@ -15,8 +15,20 @@ Patterns you MUST demonstrate:
 
 import React, { Suspense } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { useNavigation, defer } from "react-router-dom";
+import { useNavigation, NavLink } from "react-router-dom";
 import { Outlet, useLoaderData, Await, useNavigate } from "react-router-dom";
+
+import {
+  layout,
+  header,
+  nav,
+  link,
+  active,
+  container,
+  btn,
+  fallback,
+  page,
+} from "./sharedStyles";
 
 /* helpers */
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -75,7 +87,6 @@ const MainLayout = () => (
         >
           products
         </NavLink>
-        {/* add other navs */}
       </nav>
     </header>
     <main style={container}>
@@ -89,9 +100,11 @@ const DashboardLayout = () => {
   const { user } = useLoaderData();
   const navigate = useNavigate();
   return (
-    <div>
-      <p> {user.name} </p>
-      <button onClick={() => navigate("/analytics")}>see analytics</button>
+    <div style={page}>
+      <p>{user.name}</p>
+      <button style={btn} onClick={() => navigate("/analytics")}>
+        see analytics
+      </button>
       <Outlet />
     </div>
   );
@@ -101,9 +114,9 @@ const AnalyticsPage = () => {
   const { analytics } = useLoaderData();
 
   return (
-    <Suspense fallback={<div>loading ...</div>}>
+    <Suspense fallback={<div style={fallback}>loading ...</div>}>
       <Await resolve={analytics}>
-        <p>visitors {analytics.visitors}</p>
+        <p style={page}>visitors {analytics.visitors}</p>
       </Await>
     </Suspense>
   );
@@ -111,10 +124,12 @@ const AnalyticsPage = () => {
 
 const NavigationFeedback = () => {
   const navigation = useNavigation();
-  return <>{navigation.state === "loading" ? <div>loading ...</div> : null}</>;
+  return navigation.state === "loading" ? (
+    <div style={fallback}>loading ...</div>
+  ) : null;
 };
 
-const ProductsError = () => <div>Something went wrong.</div>;
+const ProductsError = () => <div style={page}>Something went wrong.</div>;
 
 // router config
 const router = createBrowserRouter([

@@ -1,16 +1,17 @@
 import { useLoaderData } from "react-router-dom";
+import { productList, productCard, productTitleText } from "../../sharedStyles";
 
 const ProductsPage = () => {
   const { products } = useLoaderData();
 
   return (
-    <div>
-      <ul>
-        {products.map((p) => (
-          <li key={p.id}>{p.name}</li>
-        ))}
-      </ul>
-    </div>
+    <ul style={productList}>
+      {products.map((p) => (
+        <li key={p.id} style={productCard}>
+          <p style={productTitleText}>{p.name}</p>
+        </li>
+      ))}
+    </ul>
   );
 };
 
