@@ -44,7 +44,7 @@ const productsLoader = async ({ request }) => {
   const url = new URL(request.url);
   const { category } = Object.fromEntries(url.searchParams.entries());
 
-  return await fetchProducts(category);
+  return { products: await fetchProducts(category) };
 };
 
 const analyticsLoader = () =>
@@ -64,13 +64,13 @@ const MainLayout = () => (
           home
         </NavLink>
         <NavLink
-          to="/"
+          to="dashboard"
           style={({ isActive }) => ({ ...link, ...active(isActive) })}
         >
           dashboard
         </NavLink>
         <NavLink
-          to="/"
+          to="/products"
           style={({ isActive }) => ({ ...link, ...active(isActive) })}
         >
           products
