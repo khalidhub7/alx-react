@@ -15,7 +15,7 @@ Patterns you MUST demonstrate:
 
 import React, { Suspense } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { useSearchParams, useNavigation, defer } from "react-router-dom";
+import { useNavigation, defer } from "react-router-dom";
 import { Outlet, useLoaderData, Await, useNavigate } from "react-router-dom";
 
 /* helpers */
@@ -43,9 +43,8 @@ const dashboardLoader = async () => ({ user: await fetchUser() });
 const productsLoader = async ({ request }) => {
   const url = new URL(request.url);
   const { category } = Object.fromEntries(url.searchParams.entries());
-  const products = await fetchProducts(category);
 
-  return { products };
+  return await fetchProducts(category);
 };
 
 const analyticsLoader = () =>
@@ -80,6 +79,7 @@ const MainLayout = () => (
       </nav>
     </header>
     <main style={container}>
+      <NavigationFeedback />
       <Outlet />
     </main>
   </div>
@@ -97,26 +97,12 @@ const DashboardLayout = () => {
   );
 };
 
-const ProductsPage = () => {
-  const { products } = useLoaderData();
-
-  return (
-    <div>
-      <ul>
-        {products.map((p) => (
-          <li key={p.id}>{p.name}</li>
-        ))}
-      </ul>
-    </div>
-  );
-};
-
 const AnalyticsPage = () => {
   const { analytics } = useLoaderData();
 
   return (
     <Suspense fallback={<div>loading ...</div>}>
-      <Await for={analytics}>
+      <Await resolve={analytics}>
         <p>visitors {analytics.visitors}</p>
       </Await>
     </Suspense>
@@ -150,7 +136,7 @@ const router = createBrowserRouter([
       },
       {
         path: "products",
-        element: <ProductsPage />,
+        lazy: () => import("./helpers/lvl11/ProductsPage"),
         loader: productsLoader,
         errorElement: <ProductsError />,
       },
