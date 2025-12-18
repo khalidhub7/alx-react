@@ -1,18 +1,23 @@
-import { useLoaderData } from "react-router-dom";
-import { productList, productCard, productTitleText } from "../../sharedStyles";
+import { useLoaderData, useSearchParams } from "react-router-dom";
 
 const ProductsPage = () => {
   const { products } = useLoaderData();
+  const [params, setParams] = useSearchParams();
 
   return (
-    <ul style={productList}>
-      {products.map((p) => (
-        <li key={p.id} style={productCard}>
-          <p style={productTitleText}>{p.name}</p>
-        </li>
-      ))}
-    </ul>
+    <>
+      <button onClick={() => setParams({ category: "electronics" })}>
+        electronics
+      </button>
+      <button onClick={() => setParams({ category: "fashion" })}>
+        fashion
+      </button>
+
+      <ul>
+        {products.map((p) => (
+          <li key={p.id}>{p.name}</li>
+        ))}
+      </ul>
+    </>
   );
 };
-
-export default ProductsPage;
