@@ -1,7 +1,7 @@
 // REACT ROUTER MASTERY — LEVEL 11 PRACTICE
-// PERFORMANCE ARCHITECTURE & DESIGN PATTERNS
-/*
-Patterns you MUST demonstrate:
+// use only Level 11 learned concepts
+/* 
+performance architecture & design patterns:
 - layout loader (shared data)
 - route-based code splitting
 - minimal loaders (data only)
@@ -14,27 +14,29 @@ Patterns you MUST demonstrate:
 */
 
 import React, { Suspense } from "react";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { useNavigation, NavLink } from "react-router-dom";
-import { Outlet, useLoaderData, Await, useNavigate } from "react-router-dom";
-
 import { layout, header, nav, link } from "./sharedStyles";
-
+import { Outlet, useLoaderData, useNavigate } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { active, container, btn, fallback, page } from "./sharedStyles";
 
 /* helpers */
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+
 const fetchUser = async () => {
   await delay(300);
   return { id: "u1", name: "khalid" };
 };
+
 const fetchProducts = async (category) => {
   await delay(500);
-  return [
+  const products = [
     { id: "p1", name: "Laptop", category: "electronics" },
     { id: "p2", name: "Shoes", category: "fashion" },
-  ].filter((p) => !category || p.category === category);
+  ];
+  return products.filter((p) => !category || p.category === category);
 };
+
 const fetchAnalytics = async () => {
   await delay(1500); // intentionally slow
   return { visitors: 1200 };
@@ -51,10 +53,17 @@ const productsLoader = async ({ request }) => {
   return { products: await fetchProducts(category) };
 };
 
-const analyticsLoader = () =>
-  defer({
-    analytics: fetchAnalytics(),
-  });
+const analyticsLoader = async () => ({}); // here is empty as u see
+// bcs with react-router-dom v7 the deferring is component responsibility now
+// the async work moved to 'AnalyticsData' comp
+const AnalyticsData = React.lazy(() => ({
+  default: async () => {
+    const analytics = await fetchAnalytics();
+    return {
+      default: () => <p style={page}>visitors {analytics.visitors}</p>,
+    };
+  },
+}));
 
 /* components */
 const MainLayout = () => (
@@ -94,7 +103,7 @@ const DashboardLayout = () => {
   return (
     <div style={page}>
       <p>{user.name}</p>
-      <button style={btn} onClick={() => navigate("/analytics")}>
+      <button style={btn} onClick={() => navigate("analytics")}>
         see analytics
       </button>
       <Outlet />
@@ -102,15 +111,11 @@ const DashboardLayout = () => {
   );
 };
 
-const AnalyticsPage = () => {
-  const { analytics } = useLoaderData();
-
-  return (
-    <Suspense fallback={<div style={fallback}>loading ...</div>}>
-      <p style={page}>visitors {analytics.visitors}</p>
-    </Suspense>
-  );
-};
+const AnalyticsPage = () => (
+  <Suspense fallback={<div style={fallback}>loading ...</div>}>
+    <AnalyticsData />
+  </Suspense>
+);
 
 const NavigationFeedback = () => {
   const navigation = useNavigation();
