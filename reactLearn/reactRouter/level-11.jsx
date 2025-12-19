@@ -1,72 +1,58 @@
 // REACT ROUTER MASTERY — LEVEL 11 PRACTICE
 // use only Level 11 learned concepts
 /* 
-performance architecture & design patterns:
-- layout loader (shared data)
+performance routing design patterns:
+- layout loader pattern
 - route-based code splitting
-- minimal loaders (data only)
-- deferred non-critical data
-- URL as state
+- fast shell + slow content (defer)
+- prefetch on intent
 - non-blocking navigation
-- route-level error boundaries
+- minimal loaders
 - stable layouts
 - router owns route data
 */
 
 import React, { Suspense } from "react";
-import { useNavigation, NavLink } from "react-router-dom";
-import { layout, header, nav, link } from "./sharedStyles";
-import { Outlet, useLoaderData, useNavigate } from "react-router-dom";
+import { Outlet, Link, NavLink, useRouteLoaderData } from "react-router-dom";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { active, container, btn, fallback, page } from "./sharedStyles";
+import { useLoaderData, useNavigation, defer, Await } from "react-router-dom";
+import { layout, header, nav, link, active, container } from "./sharedStyles";
 
-/* helpers */
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+// mock api
+const api = {
+  getUser: () =>
+    new Promise((res) =>
+      setTimeout(() => res({ id: "u1", name: "Khalid" }), 300),
+    ),
 
-const fetchUser = async () => {
-  await delay(300);
-  return { id: "u1", name: "khalid" };
-};
+  getProducts: () =>
+    new Promise((res) =>
+      setTimeout(
+        () =>
+          res([
+            { id: "p1", name: "Laptop", price: 1200 },
+            { id: "p2", name: "Phone", price: 800 },
+          ]),
+        800,
+      ),
+    ),
 
-const fetchProducts = async (category) => {
-  await delay(500);
-  const products = [
-    { id: "p1", name: "Laptop", category: "electronics" },
-    { id: "p2", name: "Shoes", category: "fashion" },
-  ];
-  return products.filter((p) => !category || p.category === category);
-};
-
-const fetchAnalytics = async () => {
-  await delay(1500); // intentionally slow
-  return { visitors: 1200 };
+  getAnalytics: () =>
+    new Promise((res) => setTimeout(() => res({ visitors: 1240 }), 1500)),
 };
 
 /* loaders */
-// user fetched once
-const dashboardLoader = async () => ({ user: await fetchUser() });
+const rootLoader = async () => ({ user: await api.getUser() });
 
-const productsLoader = async ({ request }) => {
-  const url = new URL(request.url);
-  const { category } = Object.fromEntries(url.searchParams.entries());
-
-  return { products: await fetchProducts(category) };
+const dashboardLoader = async () => {
+  return defer({
+    products: await api.getProducts(), // critical data (render immediately)
+    analytics: api.getAnalytics(), // slow data (deferred)
+  });
 };
 
-const analyticsLoader = async () => ({}); // here is empty as u see
-// bcs with react-router-dom v7 the deferring is component responsibility now
-// the async work moved to 'AnalyticsData' comp
-const AnalyticsData = React.lazy(() => ({
-  default: async () => {
-    const analytics = await fetchAnalytics();
-    return {
-      default: () => <p style={page}>visitors {analytics.visitors}</p>,
-    };
-  },
-}));
-
 /* components */
-const MainLayout = () => (
+const RootLayout = () => (
   <div style={layout}>
     <header style={header}>
       <nav style={nav}>
@@ -77,83 +63,89 @@ const MainLayout = () => (
           home
         </NavLink>
         <NavLink
-          to="dashboard"
+          to="/"
           style={({ isActive }) => ({ ...link, ...active(isActive) })}
         >
           dashboard
         </NavLink>
-        <NavLink
-          to="/products"
-          style={({ isActive }) => ({ ...link, ...active(isActive) })}
-        >
-          products
-        </NavLink>
       </nav>
     </header>
+    <NavigationState />
     <main style={container}>
-      <NavigationFeedback />
       <Outlet />
     </main>
   </div>
 );
 
-const DashboardLayout = () => {
-  const { user } = useLoaderData();
-  const navigate = useNavigate();
+const ProductsPage = () => {
+  const { products } = useLoaderData();
+  const navigation = useNavigation();
+
   return (
-    <div style={page}>
-      <p>{user.name}</p>
-      <button style={btn} onClick={() => navigate("analytics")}>
-        see analytics
-      </button>
-      <Outlet />
+    <div>
+      {navigation.state === "loading" ? <p>loading ...</p> : null}
+      <ul>
+        {products.map((p) => (
+          <li key={p.id}>{p.name}</li>
+        ))}
+      </ul>
     </div>
   );
 };
 
-const AnalyticsPage = () => (
-  <Suspense fallback={<div style={fallback}>loading ...</div>}>
-    <AnalyticsData />
-  </Suspense>
-);
+const AnalyticsWidget = ({ analytics }) => {
+  const { analytics } = useLoaderData();
 
-const NavigationFeedback = () => {
-  const navigation = useNavigation();
-  return navigation.state === "loading" ? (
-    <div style={fallback}>loading ...</div>
-  ) : null;
+  return (
+    <Suspense fallback={<p>loading ...</p>}>
+      <Await resolve={analytics}>
+        <div>
+          <p>analytics: {`< ${analytics.visitors} >`}</p>
+        </div>
+      </Await>
+    </Suspense>
+  );
 };
 
-const ProductsError = () => <div style={page}>Something went wrong.</div>;
+const NavigationState = () => {
+  const navigation = useNavigation();
+  return (
+    <div>{navigation.state === "loading" ? <p>loading ...</p> : null}</div>
+  );
+};
 
-// router config
+/* ---------------------------------- */
+/* TODO 8 — ROUTE-BASED CODE SPLITTING */
+/* ---------------------------------- */
+/*
+- Dashboard route MUST be lazy-loaded
+*/
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <MainLayout />,
+    element: <RootLayout />,
+    loader: rootLoader,
     children: [
       {
         path: "dashboard",
-        element: <DashboardLayout />,
+        lazy: () => import("./helpers/lvl11/Dashboard"),
         loader: dashboardLoader,
         children: [
           {
-            path: "analytics",
-            element: <AnalyticsPage />,
-            loader: analyticsLoader,
+            path: "products",
+            element: <ProductsPage />,
           },
+          { path: "analytics", element: <AnalyticsWidget /> },
         ],
-      },
-      {
-        path: "products",
-        lazy: () => import("./helpers/lvl11/ProductsPage"),
-        loader: productsLoader,
-        errorElement: <ProductsError />,
       },
     ],
   },
 ]);
 
-const App = () => <RouterProvider router={router} />;
+const App = () => (
+  <Suspense fallback={<p>loading app...</p>}>
+    <RouterProvider router={router} />
+  </Suspense>
+);
 
 export default App;
