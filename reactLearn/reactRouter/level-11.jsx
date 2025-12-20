@@ -41,13 +41,13 @@ const DB = {
 
 /* loaders */
 
-const dashboardLoader = () => DB.user;
+const dashboardLoader = () => ({ user: DB.user });
 
-const productsLoader = ({ request }) => {
+const productsLoader = async ({ request }) => {
   const url = new URL(request.url);
   const { category, price } = Object.fromEntries(url.searchParams.entries());
 
-  const products = DB.products.filter(
+  const products = await DB.products.filter(
     (p) =>
       (!category || p.category === category) &&
       (!price || p.price <= Number(price)),
