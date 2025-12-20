@@ -60,7 +60,7 @@ const productDetailsLoader = async ({ params }) => {
   const { id } = params;
   return defer({
     product: await DB.products.then((data) => data.find((p) => p.id === id)), // immediate
-    reviews: DB.reviews, // deferred
+    reviews: DB.reviews.then((r) => r[id]), // deferred
   });
 };
 
