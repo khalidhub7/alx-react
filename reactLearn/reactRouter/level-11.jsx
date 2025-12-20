@@ -47,7 +47,8 @@ const productsLoader = async ({ request }) => {
   const url = new URL(request.url);
   const { category, price } = Object.fromEntries(url.searchParams.entries());
 
-  const products = await DB.products.filter(
+  const all = await DB.products;
+  const products = all.filter(
     (p) =>
       (!category || p.category === category) &&
       (!price || p.price <= Number(price)),
