@@ -2,150 +2,192 @@
 // use only Level 11 learned concepts
 /* 
 performance routing design patterns:
-- layout loader pattern
-- route-based code splitting
-- fast shell + slow content (defer)
-- prefetch on intent
-- non-blocking navigation
-- minimal loaders
-- stable layouts
-- router owns route data
+- layout loader (shared data)
+- route owns data (no fetching in components)
+- minimal loaders (no over-fetching)
+- deferred non-critical data
+- navigation state UX
+- persistent layout (no re-mount)
+- URL state via search params
+- intent-based prefetch (hint only)
+- progressive enhancement (<Form>)
+- performance-first thinking
 */
 
-import React, { Suspense } from "react";
-import { Outlet, Link, NavLink, useRouteLoaderData } from "react-router-dom";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { useLoaderData, useNavigation, defer, Await } from "react-router-dom";
-import { layout, header, nav, link, active, container } from "./sharedStyles";
+/* ❌ DO NOT implement lazy loading (single-file rule)
+✅ Leave a comment where it SHOULD be used */
 
-// mock api
-const api = {
-  getUser: () =>
-    new Promise((res) =>
-      setTimeout(() => res({ id: "u1", name: "Khalid" }), 300),
-    ),
+import React, { Suspense, useEffect } from "react";
+import {
+  createBrowserRouter,
+  NavLink,
+  RouterProvider,
+  useActionData,
+} from "react-router-dom";
+import { useSearchParams, useLoaderData, Outlet } from "react-router-dom";
+import { useNavigation, defer, Await, Form, Link } from "react-router-dom";
 
-  getProducts: () =>
-    new Promise((res) =>
-      setTimeout(
-        () =>
-          res([
-            { id: "p1", name: "Laptop", price: 1200 },
-            { id: "p2", name: "Phone", price: 800 },
-          ]),
-        800,
-      ),
-    ),
-
-  getAnalytics: () =>
-    new Promise((res) => setTimeout(() => res({ visitors: 1240 }), 1500)),
+// mock db
+const products = [
+  { id: "p1", name: "Laptop", price: 1200, category: "electronics" },
+  { id: "p2", name: "Shoes", price: 150, category: "fashion" },
+];
+const reviews = { p1: ["Great", "Fast"], p2: ["Comfortable"] };
+const DB = {
+  user: { id: "u1", name: "Khalid" },
+  products: new Promise((res) => setTimeout(() => res(products), 300)),
+  reviews: new Promise((res) => setTimeout(() => res(reviews), 600)),
 };
 
 /* loaders */
-const rootLoader = async () => ({ user: await api.getUser() });
 
-const dashboardLoader = async () => {
+const dashboardLoader = () => DB.user;
+
+const productsLoader = ({ request }) => {
+  const url = new URL(request.url);
+  const { category, price } = Object.fromEntries(url.searchParams.entries());
+
+  const products = DB.products.filter(
+    (p) =>
+      (!category || p.category === category) &&
+      (!price || p.price <= Number(price)),
+  );
+
+  return { products };
+};
+
+const productDetailsLoader = async ({ params }) => {
+  const { id } = params;
   return defer({
-    products: await api.getProducts(), // critical data (render immediately)
-    analytics: api.getAnalytics(), // slow data (deferred)
+    product: await DB.products.then((data) => data.find((p) => p.id === id)), // immediate
+    reviews: DB.reviews, // deferred
   });
 };
 
-/* components */
-const RootLayout = () => (
-  <div style={layout}>
-    <header style={header}>
-      <nav style={nav}>
-        <NavLink
-          to="/"
-          style={({ isActive }) => ({ ...link, ...active(isActive) })}
-        >
-          home
-        </NavLink>
-        <NavLink
-          to="/"
-          style={({ isActive }) => ({ ...link, ...active(isActive) })}
-        >
-          dashboard
-        </NavLink>
-      </nav>
-    </header>
-    <NavigationState />
-    <main style={container}>
-      <Outlet />
-    </main>
-  </div>
-);
+/* actions */
+const productsAction = async ({ request }) => {
+  const fd = await request.formData();
+  const { category, price } = Object.fromEntries(fd);
 
-const ProductsPage = () => {
-  const { products } = useLoaderData();
+  return { category, price };
+};
+
+/* components */
+
+function DashboardLayout() {
+  const { user } = useLoaderData();
   const navigation = useNavigation();
 
   return (
     <div>
-      {navigation.state === "loading" ? <p>loading ...</p> : null}
-      <ul>
-        {products.map((p) => (
-          <li key={p.id}>{p.name}</li>
-        ))}
-      </ul>
+      {/* persistent layout */}
+      <header>
+        <NavLink to="/">home</NavLink>
+        <nav>
+          {/* load the route en intent */}
+          <NavLink to="/products" prefetch="intent">
+            Products
+          </NavLink>
+        </nav>
+      </header>
+
+      <main>
+        <p>{navigation.state === "loading" && <p>Loading...</p>}</p>
+        <h3>Welcome {user.name || "guest"}</h3>
+        <Outlet />
+      </main>
     </div>
   );
-};
+}
 
-const AnalyticsWidget = ({ analytics }) => {
-  const { analytics } = useLoaderData();
+function ProductsPage() {
+  const { products } = useLoaderData();
+  const { category, price } = useActionData();
+  const [_, setParams] = useSearchParams();
+
+  useEffect(
+    () =>
+      setParams((prev) => {
+        prev.set("category", category);
+        prev.set("price", price);
+        return prev;
+      }),
+    [category, price],
+  );
 
   return (
-    <Suspense fallback={<p>loading ...</p>}>
-      <Await resolve={analytics}>
-        <div>
-          <p>analytics: {`< ${analytics.visitors} >`}</p>
-        </div>
-      </Await>
-    </Suspense>
-  );
-};
+    <section>
+      <h4>Products</h4>
 
-const NavigationState = () => {
-  const navigation = useNavigation();
+      {/* progressive enhancement */}
+
+      <Form method="post">
+        <select name="category">
+          <option disabled selected>
+            select category
+          </option>
+          <option value="electronics">electronics</option>
+          <option value="fashion">fashion</option>
+        </select>
+      </Form>
+
+      <ul>
+        {products.map((p) => (
+          <li key={p.id}>
+            <Link to={p.id}>{p.name}</Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function ProductDetails() {
+  const { product, reviews } = useLoaderData();
+
   return (
-    <div>{navigation.state === "loading" ? <p>loading ...</p> : null}</div>
-  );
-};
+    <section>
+      <h4>{product.name}</h4>
+      <p>{product.price}$</p>
 
-/* ---------------------------------- */
-/* TODO 8 — ROUTE-BASED CODE SPLITTING */
-/* ---------------------------------- */
-/*
-- Dashboard route MUST be lazy-loaded
-*/
+      {/* deferred data */}
+      <Suspense fallback={<p>Loading reviews...</p>}>
+        <Await resolve={reviews}>
+          {(data) => (
+            <ul>
+              {data.map((r, i) => (
+                <li key={i}>{r}</li>
+              ))}
+            </ul>
+          )}
+        </Await>
+      </Suspense>
+    </section>
+  );
+}
+
+// router config
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <RootLayout />,
-    loader: rootLoader,
+    element: <DashboardLayout />,
+    loader: dashboardLoader,
     children: [
       {
-        path: "dashboard",
-        lazy: () => import("./helpers/lvl11/Dashboard"),
-        loader: dashboardLoader,
-        children: [
-          {
-            path: "products",
-            element: <ProductsPage />,
-          },
-          { path: "analytics", element: <AnalyticsWidget /> },
-        ],
+        path: "products",
+        loader: productsLoader,
+        action: productsAction,
+        element: <ProductsPage />,
+      },
+      {
+        path: "products/:id",
+        loader: productDetailsLoader,
+        element: <ProductDetails />,
       },
     ],
   },
 ]);
 
-const App = () => (
-  <Suspense fallback={<p>loading app...</p>}>
-    <RouterProvider router={router} />
-  </Suspense>
-);
-
-export default App;
+export default function App() {
+  return <RouterProvider router={router} />;
+}
