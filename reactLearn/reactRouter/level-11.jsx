@@ -68,8 +68,7 @@ const productDetailsLoader = async ({ params }) => {
 const productsAction = async ({ request }) => {
   const fd = await request.formData();
   const { category, price } = Object.fromEntries(fd);
-
-  return { category, price };
+  return { ...(category && { category }), ...(price && { price }) };
 };
 
 /* components */
@@ -92,7 +91,7 @@ function DashboardLayout() {
       </header>
 
       <main>
-        <p>{navigation.state === "loading" && <p>Loading...</p>}</p>
+        {navigation.state === "loading" && <p>Loading...</p>}
         <h3>Welcome {user.name || "guest"}</h3>
         <Outlet />
       </main>
@@ -102,7 +101,8 @@ function DashboardLayout() {
 
 function ProductsPage() {
   const { products } = useLoaderData();
-  const { category, price } = useActionData();
+  const actionData = useActionData() || {};
+  const { category, price } = actionData;
   const [_, setParams] = useSearchParams();
 
   useEffect(
