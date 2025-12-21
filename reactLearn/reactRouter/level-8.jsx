@@ -9,11 +9,16 @@ conditional lazy loading,
 micro-split lazy loading,
 prefetching (hover preload)
 */
+
 import { NavLink } from "react-router-dom";
-import React, { Suspense, lazy } from "react";
-import { Loading } from "./helpers/lvl8/utils";
+import { Outlet, useLoaderData, useNavigate } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import React, { Suspense, lazy, useState, useRef, useEffect } from "react";
+
+import { productList, productCard, page } from "./sharedStyles";
+import { productTitleText, heavyPanel, fallback } from "./sharedStyles";
+import { btn, heavyContainer, productsLayoutWrapper } from "./sharedStyles";
 import { layout, header, nav, link, active, container } from "./sharedStyles";
-import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 
 // mock db
 // heavy: mean this car have a complex preview ui
@@ -26,20 +31,157 @@ const DB = {
 };
 
 /*  loaders */
-const productsLoader = async () => {
-  return DB.cars;
-};
+const productsLoader = async () => DB.cars;
 
-const productLoader = async ({ params }) => {
-  return DB.cars.find((p) => p.id === params.id);
-};
+const productLoader = async ({ params }) =>
+  DB.cars.find((p) => p.id === params.id);
 
 // route-level lazy loading
 // (The page loads only when the user opens that route)
-const Home = lazy(() => import("./helpers/lvl8/Home"));
-const ProductPage = lazy(() => import("./helpers/lvl8/ProductPage"));
-const ProductsPage = lazy(() => import("./helpers/lvl8/ProductsPage"));
-const ProductsLayout = lazy(() => import("./helpers/lvl8/ProductsLayout"));
+
+// PURE LOGIC (real project) will mocked below
+// const Home = lazy(() => import("./helpers/lvl8/Home"));
+// const ProductPage = lazy(() => import("./helpers/lvl8/ProductPage"));
+// const ProductsPage = lazy(() => import("./helpers/lvl8/ProductsPage"));
+// const ProductsLayout = lazy(() => import("./helpers/lvl8/ProductsLayout"));
+
+/* helpers */
+const Loading = ({ children }) => (
+  <Suspense fallback={<div style={fallback}>loading component ...</div>}>
+    {children}
+  </Suspense>
+);
+
+const HomeComp = () => (
+  <div style={page}>
+    <h2>🏠 Home Page</h2>
+    <p>Level 8 practice</p>
+  </div>
+);
+
+const ProductsLayoutComp = () => (
+  <div style={productsLayoutWrapper}>
+    <h2>📦 Products</h2>
+    <Outlet />
+  </div>
+);
+
+const ProductsPageComp = () => {
+  const data = useLoaderData();
+  const navigate = useNavigate();
+
+  return (
+    <div style={page}>
+      <h3>🛍️ products list</h3>
+
+      <ul style={productList}>
+        {data.map((c) => (
+          <li key={c.id} style={productCard}>
+            <p style={productTitleText}>
+              {c.model} — <strong>${c.price}</strong>
+            </p>
+
+            <button style={btn} onClick={() => navigate(c.id)}>
+              discover the car
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+const HeavyAnalyticsPanelComp = ({ cartId }) => (
+  <div style={heavyPanel}>
+    <p>[HeavyAnalyticsPanel with id {cartId}]</p>
+  </div>
+);
+
+const ProductPageComp = () => {
+  const p = useLoaderData();
+  const [show, setShow] = useState(false);
+  const firstRender = useRef(true);
+  const isHeavyUiLoadedBefore = useRef(false);
+  const [HeavyAnalyticsPanel, setHeavyAnalyticsPanel] = useState(undefined);
+
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    if (isHeavyUiLoadedBefore.current) return;
+
+    console.log("micro-split lazy loading ...");
+
+    setHeavyAnalyticsPanel(
+      lazy(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(() => {
+              resolve({ default: HeavyAnalyticsPanelComp });
+            }, 1000);
+          }),
+      ),
+    );
+
+    isHeavyUiLoadedBefore.current = true;
+  }, [show]);
+
+  return (
+    <div style={page}>
+      <h3>{p.model}</h3>
+      <p>
+        <strong>Price:</strong> ${p.price}
+      </p>
+
+      {p.heavy ? (
+        <div style={heavyContainer}>
+          <p>this product has a heavy UI preview</p>
+
+          <button style={btn} onClick={() => setShow((prev) => !prev)}>
+            {show ? "hide" : "show"} heavy ui
+          </button>
+
+          {show && HeavyAnalyticsPanel ? (
+            <Loading>
+              <HeavyAnalyticsPanel cartId={p.id} />
+            </Loading>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
+/* mocked lazy imports */
+
+const Home = lazy(
+  () =>
+    new Promise((resolve) => {
+      setTimeout(() => resolve({ default: HomeComp }), 1000);
+    }),
+);
+
+const ProductsLayout = lazy(
+  () =>
+    new Promise((resolve) => {
+      setTimeout(() => resolve({ default: ProductsLayoutComp }), 1000);
+    }),
+);
+
+const ProductsPage = lazy(
+  () =>
+    new Promise((resolve) => {
+      setTimeout(() => resolve({ default: ProductsPageComp }), 1000);
+    }),
+);
+
+const ProductPage = lazy(
+  () =>
+    new Promise((resolve) => {
+      setTimeout(() => resolve({ default: ProductPageComp }), 1000);
+    }),
+);
 
 const MainLayout = () => (
   <div style={layout}>
@@ -51,7 +193,7 @@ const MainLayout = () => (
           to="/"
           onMouseEnter={() => {
             console.log("importing the Home comp ...");
-            import("./helpers/lvl8/Home");
+            // import("./helpers/lvl8/Home");
           }}
           style={({ isActive }) => ({ ...link, ...active(isActive) })}
         >
@@ -64,9 +206,8 @@ const MainLayout = () => (
             console.log(
               "importing the ProductsPage and ProductsLayout comps ...",
             );
-
-            import("./helpers/lvl8/ProductsPage");
-            import("./helpers/lvl8/ProductsLayout");
+            // import("./helpers/lvl8/ProductsPage");
+            // import("./helpers/lvl8/ProductsLayout");
           }}
           style={({ isActive }) => ({ ...link, ...active(isActive) })}
         >
@@ -87,7 +228,6 @@ const router = createBrowserRouter([
   {
     path: "/",
     lazy: () => ({
-      // route-level lazy loading
       element: (
         <Loading>
           <MainLayout />
@@ -114,10 +254,10 @@ const router = createBrowserRouter([
             </Loading>
           ),
         }),
-
         children: [
           {
             index: true,
+            loader: productsLoader,
             lazy: () => ({
               element: (
                 <Loading>
@@ -125,10 +265,10 @@ const router = createBrowserRouter([
                 </Loading>
               ),
             }),
-            loader: productsLoader,
           },
           {
             path: ":id",
+            loader: productLoader,
             lazy: () => ({
               element: (
                 <Loading>
@@ -136,7 +276,6 @@ const router = createBrowserRouter([
                 </Loading>
               ),
             }),
-            loader: productLoader,
           },
         ],
       },
@@ -144,8 +283,6 @@ const router = createBrowserRouter([
   },
 ]);
 
-const App = () => {
-  return <RouterProvider router={router} />;
-};
+const App = () => <RouterProvider router={router} />;
 
 export default App;
