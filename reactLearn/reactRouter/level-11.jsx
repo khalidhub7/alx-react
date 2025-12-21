@@ -32,8 +32,9 @@ const products = [
   { id: "p2", name: "Shoes", price: 150, category: "fashion" },
 ];
 const reviews = { p1: ["Great", "Fast"], p2: ["Comfortable"] };
+const user = { id: "u1", name: "Khalid" };
 const DB = {
-  user: { id: "u1", name: "Khalid" },
+  user,
   products: new Promise((res) => setTimeout(() => res(products), 300)),
   reviews: new Promise((res) => setTimeout(() => res(reviews), 600)),
 };
