@@ -12,15 +12,43 @@ performance routing design patterns:
 - intent-based prefetch (hint only)
 - progressive enhancement (<Form>)
 - performance-first thinking
+Note:
+- Do not implement lazy loading in this file (single-file rule)
+- Add a comment where lazy loading should be used
 */
 
-/* ❌ DO NOT implement lazy loading (single-file rule)
-✅ Leave a comment where it SHOULD be used */
-
 import React, { Suspense } from "react";
-import { createBrowserRouter, NavLink, RouterProvider } from "react-router-dom";
-import { useLoaderData, Outlet, redirect } from "react-router-dom";
-import { useNavigation, defer, Await, Form, Link } from "react-router-dom";
+import {
+  createBrowserRouter,
+  NavLink,
+  RouterProvider,
+  useLoaderData,
+  Outlet,
+  redirect,
+  useNavigation,
+  defer,
+  Await,
+  Form,
+  Link,
+} from "react-router-dom";
+
+import {
+  layout,
+  header,
+  nav,
+  link,
+  active,
+  container,
+  page,
+  form,
+  input,
+  btn,
+  productList,
+  productCard,
+  productTitleText,
+  fallback,
+  linkButton,
+} from "./sharedStyles";
 
 // mock db
 const products = [
@@ -77,50 +105,60 @@ const productsAction = async ({ request }) => {
 /* components */
 
 // persistent layout (no re-mount)
-function DashboardLayout() {
+const DashboardLayout = () => {
   const { user } = useLoaderData();
   const navigation = useNavigation();
 
   return (
-    <div>
+    <div style={layout}>
       {/* persistent layout */}
-      <header>
-        <NavLink to="/">home</NavLink>
-        <nav>
+      <header style={header}>
+        <nav style={nav}>
+          <NavLink
+            to="/"
+            style={({ isActive }) => ({ ...link, ...active(isActive) })}
+          >
+            home
+          </NavLink>
+
           {/* intent-based prefetch (hint only) */}
-          <NavLink to="/products" prefetch="intent">
+          <NavLink
+            to="/products"
+            prefetch="intent"
+            style={({ isActive }) => ({ ...link, ...active(isActive) })}
+          >
             Products
           </NavLink>
         </nav>
       </header>
 
-      <main>
+      <main style={container}>
         {/* navigation state UX */}
-        {navigation.state === "loading" && <p>Loading...</p>}
+        {navigation.state === "loading" && <p style={fallback}>Loading...</p>}
         <h3>Welcome {user.name || "guest"}</h3>
         <Outlet />
       </main>
     </div>
   );
-}
+};
 
 // route owns data (no fetching in components)
-function ProductsPage() {
+const ProductsPage = () => {
   const { products } = useLoaderData();
 
   return (
-    <section>
+    <section style={page}>
       <h4>Products</h4>
 
       {/*
-      progressive Enhancement Pattern
-          works without JavaScript
-          router handles submission + navigation
-          URL becomes the source of truth
+        progressive Enhancement Pattern
+        works without JavaScript
+        router handles submission + navigation
+        URL becomes the source of truth
       */}
 
-      <Form method="post">
-        <select name="category" defaultValue="">
+      <Form method="post" style={form}>
+        <select name="category" defaultValue="" style={input}>
           <option value="" disabled>
             select category
           </option>
@@ -128,37 +166,47 @@ function ProductsPage() {
           <option value="fashion">fashion</option>
         </select>
 
-        <input type="number" name="price" placeholder="max price" />
+        <input
+          type="number"
+          name="price"
+          placeholder="max price"
+          style={input}
+        />
 
-        <button type="submit">Apply</button>
+        <button type="submit" style={btn}>
+          Apply
+        </button>
       </Form>
 
-      <ul>
+      <ul style={productList}>
         {products.map((p) => (
-          <li key={p.id}>
-            <Link to={p.id}>{p.name}</Link>
+          <li key={p.id} style={productCard}>
+            <p style={productTitleText}>{p.name}</p>
+            <Link to={p.id} style={linkButton}>
+              view
+            </Link>
           </li>
         ))}
       </ul>
     </section>
   );
-}
+};
 
-function ProductDetails() {
+const ProductDetails = () => {
   const { product, reviews } = useLoaderData();
 
   return (
-    <section>
+    <section style={page}>
       <h4>{product.name}</h4>
       <p>{product.price}$</p>
 
       {/* deferred data 
-      render page immediately, wait only for reviews
+          render page immediately, wait only for reviews
       */}
-      <Suspense fallback={<p>Loading reviews...</p>}>
+      <Suspense fallback={<p style={fallback}>Loading reviews...</p>}>
         <Await resolve={reviews}>
           {(data) => (
-            <ul>
+            <ul style={productList}>
               {data.map((r, i) => (
                 <li key={i}>{r}</li>
               ))}
@@ -168,7 +216,7 @@ function ProductDetails() {
       </Suspense>
     </section>
   );
-}
+};
 
 // router config
 const router = createBrowserRouter([
@@ -181,9 +229,11 @@ const router = createBrowserRouter([
         path: "products",
         loader: productsLoader,
         action: productsAction,
-        /* lazy loading should happen here like this
-        lazy: () => import("./ProductsPage")
-        */
+
+        // LAZY LOADING PATTERN (Level 11)
+        // This route should be code-split in a real app
+        // lazy: () => import("./ProductsPage")
+
         element: <ProductsPage />,
       },
       {
@@ -195,6 +245,6 @@ const router = createBrowserRouter([
   },
 ]);
 
-export default function App() {
-  return <RouterProvider router={router} />;
-}
+const App = () => <RouterProvider router={router} />;
+
+export default App;
