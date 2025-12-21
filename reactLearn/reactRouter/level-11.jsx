@@ -40,6 +40,7 @@ const DB = {
 const dashboardLoader = () => ({ user: DB.user });
 
 // minimal loaders (no over-fetching)
+// URL state via search params
 const productsLoader = async ({ request }) => {
   const url = new URL(request.url);
   const { category, price } = Object.fromEntries(url.searchParams.entries());
@@ -54,11 +55,14 @@ const productsLoader = async ({ request }) => {
   return { products };
 };
 
+// performance-first thinking
 const productDetailsLoader = async ({ params }) => {
   const { id } = params;
   return defer({
-    product: await DB.products.then((data) => data.find((p) => p.id === id)), // immediate
-    reviews: DB.reviews.then((r) => r[id]), // deferred
+    // immediate → load now
+    product: await DB.products.then((data) => data.find((p) => p.id === id)),
+    // deferred (loads in background)
+    reviews: DB.reviews.then((r) => r[id]),
   });
 };
 
@@ -72,6 +76,7 @@ const productsAction = async ({ request }) => {
 
 /* components */
 
+// persistent layout (no re-mount)
 function DashboardLayout() {
   const { user } = useLoaderData();
   const navigation = useNavigation();
@@ -82,10 +87,7 @@ function DashboardLayout() {
       <header>
         <NavLink to="/">home</NavLink>
         <nav>
-          {/* Prefetch on intent:
-- preloads route data when user hovers/focuses
-- improves perceived navigation speed
-- should be used for common paths only */}
+          {/* intent-based prefetch (hint only) */}
           <NavLink to="/products" prefetch="intent">
             Products
           </NavLink>
@@ -93,6 +95,7 @@ function DashboardLayout() {
       </header>
 
       <main>
+        {/* navigation state UX */}
         {navigation.state === "loading" && <p>Loading...</p>}
         <h3>Welcome {user.name || "guest"}</h3>
         <Outlet />
@@ -109,7 +112,12 @@ function ProductsPage() {
     <section>
       <h4>Products</h4>
 
-      {/* progressive enhancement */}
+      {/*
+      progressive Enhancement Pattern
+          works without JavaScript
+          router handles submission + navigation
+          URL becomes the source of truth
+      */}
 
       <Form method="post">
         <select name="category" defaultValue="">
@@ -144,7 +152,9 @@ function ProductDetails() {
       <h4>{product.name}</h4>
       <p>{product.price}$</p>
 
-      {/* deferred data */}
+      {/* deferred data 
+      render page immediately, wait only for reviews
+      */}
       <Suspense fallback={<p>Loading reviews...</p>}>
         <Await resolve={reviews}>
           {(data) => (
