@@ -17,14 +17,9 @@ performance routing design patterns:
 /* ❌ DO NOT implement lazy loading (single-file rule)
 ✅ Leave a comment where it SHOULD be used */
 
-import React, { Suspense, useEffect } from "react";
-import {
-  createBrowserRouter,
-  NavLink,
-  RouterProvider,
-  useActionData,
-} from "react-router-dom";
-import { useSearchParams, useLoaderData, Outlet } from "react-router-dom";
+import React, { Suspense } from "react";
+import { createBrowserRouter, NavLink, RouterProvider } from "react-router-dom";
+import { useLoaderData, Outlet, redirect } from "react-router-dom";
 import { useNavigation, defer, Await, Form, Link } from "react-router-dom";
 
 // mock db
@@ -41,8 +36,10 @@ const DB = {
 
 /* loaders */
 
+// layout loader (shared data)
 const dashboardLoader = () => ({ user: DB.user });
 
+// minimal loaders (no over-fetching)
 const productsLoader = async ({ request }) => {
   const url = new URL(request.url);
   const { category, price } = Object.fromEntries(url.searchParams.entries());
@@ -68,8 +65,9 @@ const productDetailsLoader = async ({ params }) => {
 /* actions */
 const productsAction = async ({ request }) => {
   const fd = await request.formData();
-  const { category, price } = Object.fromEntries(fd);
-  return { ...(category && { category }), ...(price && { price }) };
+  const params = new URLSearchParams(fd);
+
+  return redirect(`/products?${params.toString()}`);
 };
 
 /* components */
@@ -84,7 +82,10 @@ function DashboardLayout() {
       <header>
         <NavLink to="/">home</NavLink>
         <nav>
-          {/* load the route en intent */}
+          {/* Prefetch on intent:
+- preloads route data when user hovers/focuses
+- improves perceived navigation speed
+- should be used for common paths only */}
           <NavLink to="/products" prefetch="intent">
             Products
           </NavLink>
@@ -100,21 +101,9 @@ function DashboardLayout() {
   );
 }
 
+// route owns data (no fetching in components)
 function ProductsPage() {
   const { products } = useLoaderData();
-  const actionData = useActionData() || {};
-  const { category, price } = actionData;
-  const [_, setParams] = useSearchParams();
-
-  useEffect(
-    () =>
-      setParams((prev) => {
-        prev.set("category", category);
-        prev.set("price", price);
-        return prev;
-      }),
-    [category, price],
-  );
 
   return (
     <section>
@@ -123,13 +112,17 @@ function ProductsPage() {
       {/* progressive enhancement */}
 
       <Form method="post">
-        <select name="category">
-          <option disabled selected>
+        <select name="category" defaultValue="">
+          <option value="" disabled>
             select category
           </option>
           <option value="electronics">electronics</option>
           <option value="fashion">fashion</option>
         </select>
+
+        <input type="number" name="price" placeholder="max price" />
+
+        <button type="submit">Apply</button>
       </Form>
 
       <ul>
@@ -178,6 +171,9 @@ const router = createBrowserRouter([
         path: "products",
         loader: productsLoader,
         action: productsAction,
+        /* lazy loading should happen here like this
+        lazy: () => import("./ProductsPage")
+        */
         element: <ProductsPage />,
       },
       {
