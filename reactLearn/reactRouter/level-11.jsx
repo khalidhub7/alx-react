@@ -18,37 +18,13 @@ Note:
 */
 
 import React, { Suspense } from "react";
-import {
-  createBrowserRouter,
-  NavLink,
-  RouterProvider,
-  useLoaderData,
-  Outlet,
-  redirect,
-  useNavigation,
-  defer,
-  Await,
-  Form,
-  Link,
-} from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { NavLink, Outlet, redirect, Await, Form } from "react-router-dom";
+import { useLoaderData, useNavigation, defer, Link } from "react-router-dom";
 
-import {
-  layout,
-  header,
-  nav,
-  link,
-  active,
-  container,
-  page,
-  form,
-  input,
-  btn,
-  productList,
-  productCard,
-  productTitleText,
-  fallback,
-  linkButton,
-} from "./sharedStyles";
+import { page, form, input, productList, fallback } from "./sharedStyles";
+import { layout, header, nav, link, active, container } from "./sharedStyles";
+import { productCard, productTitleText, linkButton, btn } from "./sharedStyles";
 
 // mock db
 const products = [
