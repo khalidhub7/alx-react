@@ -223,5 +223,6 @@ const router = createBrowserRouter([
 ]);
 
 const App = () => <RouterProvider router={router} />;
-
+// export for testing
+export { DashboardLayout, dashboardLoader };
 export default App;
