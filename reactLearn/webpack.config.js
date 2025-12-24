@@ -24,6 +24,7 @@ module.exports = {
     static: {
       directory: path.join(__dirname, "public"),
     },
+    /* historyApiFallback: true, */ // for fallback the 404 page
     compress: true,
     port: 3000,
   },
