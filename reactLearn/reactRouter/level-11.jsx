@@ -32,7 +32,7 @@ const products = [
   { id: "p2", name: "Shoes", price: 150, category: "fashion" },
 ];
 const reviews = { p1: ["Great", "Fast"], p2: ["Comfortable"] };
-const user = { id: "u1", name: "Khalid" };
+const user = { id: "u1", name: "khalid" };
 const DB = {
   user,
   products: new Promise((res) => setTimeout(() => res(products), 300)),
@@ -80,6 +80,7 @@ const productsAction = async ({ request }) => {
 };
 
 /* components */
+const Home = () => <h4 style={page}>🏠 home</h4>;
 
 // persistent layout (no re-mount)
 const DashboardLayout = () => {
@@ -104,7 +105,7 @@ const DashboardLayout = () => {
             prefetch="intent"
             style={({ isActive }) => ({ ...link, ...active(isActive) })}
           >
-            Products
+            products
           </NavLink>
         </nav>
       </header>
@@ -112,7 +113,7 @@ const DashboardLayout = () => {
       <main style={container}>
         {/* navigation state UX */}
         {navigation.state === "loading" && <p style={fallback}>Loading...</p>}
-        <h3>Welcome {user.name || "guest"}</h3>
+        <h3>welcome {user.name || "guest"}</h3>
         <Outlet />
       </main>
     </div>
@@ -134,7 +135,7 @@ const ProductsPage = () => {
         URL becomes the source of truth
       */}
 
-      <Form method="post" style={form}>
+      <Form method="post" style={form} data-testid="filter-form">
         <select name="category" defaultValue="" style={input}>
           <option value="" disabled>
             select category
@@ -203,6 +204,10 @@ const router = createBrowserRouter([
     loader: dashboardLoader,
     children: [
       {
+        index: true,
+        element: <Home />,
+      },
+      {
         path: "products",
         loader: productsLoader,
         action: productsAction,
@@ -224,5 +229,14 @@ const router = createBrowserRouter([
 
 const App = () => <RouterProvider router={router} />;
 // export for testing
-export { DashboardLayout, dashboardLoader };
+export {
+  Home,
+  DashboardLayout,
+  dashboardLoader,
+  productsAction,
+  productsLoader,
+  ProductsPage,
+  ProductDetails,
+  productDetailsLoader,
+};
 export default App;
