@@ -7,11 +7,7 @@ loaders, actions, createBrowserRouter,
 */
 
 import React from "react";
-import {
-  useNavigation,
-  NavLink,
-  useNavigate,
-} from "react-router-dom";
+import { useNavigation, NavLink, useNavigate } from "react-router-dom";
 import { RouterProvider, useLoaderData } from "react-router-dom";
 import { useActionData, Form, redirect } from "react-router-dom";
 import { createBrowserRouter, Link, Outlet } from "react-router-dom";

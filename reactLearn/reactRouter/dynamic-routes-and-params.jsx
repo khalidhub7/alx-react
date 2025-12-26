@@ -144,20 +144,11 @@ const App = () => {
           {/* products */}
           <Route index element={<Home />} />
           <Route path="products" element={<Products />} />
-          <Route
-            path="products/:productId"
-            element={<ProductDetails />}
-          />
-          <Route
-            path="products/:productId/:slug"
-            element={<ProductSlug />}
-          />
+          <Route path="products/:productId" element={<ProductDetails />} />
+          <Route path="products/:productId/:slug" element={<ProductSlug />} />
 
           {/* orders */}
-          <Route
-            path="orders/:orderId/items/:itemId"
-            element={<OrderItem />}
-          />
+          <Route path="orders/:orderId/items/:itemId" element={<OrderItem />} />
 
           {/* shop */}
           <Route path="shop/:category?" element={<Shop />} />

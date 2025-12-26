@@ -10,9 +10,7 @@ import { link, container, btn, active } from "./sharedStyles";
 // simple pages
 const Home = () => <h4 style={page}>home page</h4>;
 const Products = () => <h4 style={page}>our products</h4>;
-const ProductDetails = () => (
-  <h4 style={page}>single product details</h4>
-);
+const ProductDetails = () => <h4 style={page}>single product details</h4>;
 const Cart = () => <h4 style={page}>your cart</h4>;
 const NotFound = () => <h4 style={page}>404 - page not found</h4>;
 

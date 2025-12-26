@@ -10,9 +10,7 @@ import { nav, link, container } from "./sharedStyles";
 // simple pages
 const Home = () => <h4 style={page}>home page</h4>;
 const Products = () => <h4 style={page}>our products</h4>;
-const ProductDetails = () => (
-  <h4 style={page}>single product details</h4>
-);
+const ProductDetails = () => <h4 style={page}>single product details</h4>;
 const Cart = () => <h4 style={page}>your cart</h4>;
 const About = () => <h4 style={page}>about us</h4>;
 

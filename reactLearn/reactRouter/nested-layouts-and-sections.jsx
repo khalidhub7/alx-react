@@ -113,9 +113,7 @@ const ShopLayout = () => {
 const Products = () => <h4 style={page}>🛒 all Products</h4>;
 const Category = () => {
   const { category } = useParams();
-  return (
-    <h4 style={page}>🔎 category products {category || "all"}</h4>
-  );
+  return <h4 style={page}>🔎 category products {category || "all"}</h4>;
 };
 
 // account layout
@@ -206,9 +204,7 @@ const DashboardLayout = () => (
 );
 
 const DashboardOverview = () => <h4 style={page}>📊 overview</h4>;
-const DashboardProducts = () => (
-  <h4 style={page}>📦 manage products</h4>
-);
+const DashboardProducts = () => <h4 style={page}>📦 manage products</h4>;
 const DashboardStats = () => <h4 style={page}>📈 stats</h4>;
 
 const App = () => {
