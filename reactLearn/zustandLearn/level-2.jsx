@@ -12,6 +12,8 @@ core store design patterns:
 */
 
 import { create } from "zustand";
+import { addItem, removeItem, clearCart } from "./helpers";
+import { increaseQuantity, decreaseQuantity } from "./helpers";
 
 // cart item shape
 // const _ = { id: "1", title: "socks", price: 29, quantity: 2 };
@@ -23,52 +25,11 @@ const useCartStore = create((set, get) => ({
   totalPrice: 0,
 
   // actions
-  addItem: (item) =>
-    set((state) => {
-      const isExist = state.cartItems.find((i) => i.id === item.id);
-      const cartItems = isExist
-        ? state.cartItems.map((i) =>
-            i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i,
-          )
-        : [...state.cartItems, { ...item, quantity: 1 }];
-      const totalPrice = state.totalPrice + item.price;
-      const totalQuantity = state.totalQuantity + 1;
-      return { cartItems, totalQuantity, totalPrice };
-    }),
-
-  removeItem: (id) =>
-    set((state) => {
-      const item = state.cartItems.find((i) => i.id === id);
-      const cartItems = state.cartItems.filter((item) => item.id !== id);
-      const totalPrice = state.totalPrice - item.price * item.quantity;
-      const totalQuantity = state.totalQuantity - item.quantity;
-      return { cartItems, totalPrice, totalQuantity };
-    }),
-
-  increaseQuantity: (id) =>
-    set((state) => {
-      const item = state.cartItems.find((i) => i.id === id);
-      const cartItems = state.cartItems.map((i) =>
-        i.id === id ? { ...i, quantity: i.quantity + 1 } : i,
-      );
-      const totalPrice = state.totalPrice + item.price;
-      const totalQuantity = state.totalQuantity + 1;
-      return { cartItems, totalPrice, totalQuantity };
-    }),
-
-  decreaseQuantity: (id) =>
-    set((state) => {
-      const item = state.cartItems.find((i) => i.id === id);
-      const cartItems = state.cartItems
-        .map((i) => (i.id === id ? { ...i, quantity: i.quantity - 1 } : i))
-        .filter((i) => i.quantity > 0);
-      const totalPrice = state.totalPrice - item.price;
-      const totalQuantity = state.totalQuantity - 1;
-      return { cartItems, totalPrice, totalQuantity };
-    }),
-
-  clearCart: () =>
-    set(() => ({ cartItems: [], totalPrice: 0, totalQuantity: 0 })),
+  addItem: (item) => addItem(item, set),
+  removeItem: (id) => removeItem(id, set),
+  increaseQuantity: (id) => increaseQuantity(id, set),
+  decreaseQuantity: (id) => decreaseQuantity(id, set),
+  clearCart: () => clearCart(set),
 }));
 
 export default useCartStore;
