@@ -1,7 +1,6 @@
 // REACT ROUTER MASTERY — LEVEL 12 TESTING
 /* 
-behavior-driven tests for 
-'performance-first-data-routing.jsx' routing architecture
+behavior-driven tests for 'level-11.jsx' routing architecture
 */
 /*
 Verifies:
