@@ -21,8 +21,6 @@ import { increaseQuantity, decreaseQuantity } from "./helpers";
 const useCartStore = create((set, get) => ({
   // state
   cartItems: [],
-  totalQuantity: 0,
-  totalPrice: 0,
 
   // actions
   addItem: (item) => addItem(item, set),

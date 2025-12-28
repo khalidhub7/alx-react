@@ -7,43 +7,31 @@ const addItem = (item, set) =>
           i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i,
         )
       : [...state.cartItems, { ...item, quantity: 1 }];
-    const totalPrice = state.totalPrice + item.price;
-    const totalQuantity = state.totalQuantity + 1;
-    return { cartItems, totalQuantity, totalPrice };
+    return { cartItems };
   });
 
 const removeItem = (id, set) =>
   set((state) => {
-    const item = state.cartItems.find((i) => i.id === id);
     const cartItems = state.cartItems.filter((item) => item.id !== id);
-    const totalPrice = state.totalPrice - item.price * item.quantity;
-    const totalQuantity = state.totalQuantity - item.quantity;
-    return { cartItems, totalPrice, totalQuantity };
+    return { cartItems };
   });
 
 const increaseQuantity = (id, set) =>
   set((state) => {
-    const item = state.cartItems.find((i) => i.id === id);
     const cartItems = state.cartItems.map((i) =>
       i.id === id ? { ...i, quantity: i.quantity + 1 } : i,
     );
-    const totalPrice = state.totalPrice + item.price;
-    const totalQuantity = state.totalQuantity + 1;
-    return { cartItems, totalPrice, totalQuantity };
+    return { cartItems };
   });
 
 const decreaseQuantity = (id, set) =>
   set((state) => {
-    const item = state.cartItems.find((i) => i.id === id);
     const cartItems = state.cartItems
       .map((i) => (i.id === id ? { ...i, quantity: i.quantity - 1 } : i))
       .filter((i) => i.quantity > 0);
-    const totalPrice = state.totalPrice - item.price;
-    const totalQuantity = state.totalQuantity - 1;
-    return { cartItems, totalPrice, totalQuantity };
+    return { cartItems };
   });
 
-const clearCart = (set) =>
-  set(() => ({ cartItems: [], totalPrice: 0, totalQuantity: 0 }));
+const clearCart = (set) => set(() => ({ cartItems: [] }));
 
 export { addItem, removeItem, increaseQuantity, decreaseQuantity, clearCart };
