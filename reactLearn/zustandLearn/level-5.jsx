@@ -16,7 +16,7 @@ ZUSTAND — async design patterns:
 */
 
 import { create } from "zustand";
-import { addItem, decreaseQuantity, removeItem } from "./helpers";
+import { addItem, removeItem } from "./helpers";
 
 const initialState = {
   products: null,
@@ -40,14 +40,17 @@ const useStore = create((set, get) => ({
         productError: null,
         loadingProducts: true,
       });
-      const products = await fetch("/api/products").then((res) => res.json());
+      const res = await fetch("/api/products");
+      const products = await res.json();
 
       // protect against race conditions
       if (get().currentProductsRequestId === requestId) {
         set({ products, loadingProducts: false, productError: null });
       }
     } catch (err) {
-      set({ productError: err.message, loadingProducts: false });
+      if (get().currentProductsRequestId === requestId) {
+        set({ productError: err.message, loadingProducts: false });
+      }
       console.log(`err: ${get().productError}`);
     }
   },
@@ -55,46 +58,48 @@ const useStore = create((set, get) => ({
   // cart actions
   addToCart: async (product) => {
     // optimistic update (update the UI before the server responds)
-    const prevCart = get().cartItems;
+    const prevCart = structuredClone(get().cartItems);
     addItem(product, set);
 
-    fetch("/api/cart", {
-      method: "POST",
-      body: JSON.stringify(product),
-    })
-      .then((res) =>
-        !res.ok
-          ? (() => {
-              throw new Error("rollback required");
-            })()
-          : null,
-      )
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        body: JSON.stringify(product),
+      });
+      !res.ok
+        ? (() => {
+            throw new Error("rollback");
+          })()
+        : null;
+    } catch (_) {
       // request fails → rollback cart state
-      .catch((_) => set({ cartItems: prevCart }));
+      set({ cartItems: prevCart });
+    }
   },
 
   removeFromCart: async (productId) => {
     // optimistic remove from cart
-    const prevCart = get().cartItems;
+    const prevCart = structuredClone(get().cartItems);
     removeItem(productId, set);
 
-    fetch("/api/cart", {
-      method: "delete",
-      body: JSON.stringify(productId),
-    })
-      .then((res) =>
-        !res.ok
-          ? (() => {
-              throw new Error("rollback required");
-            })()
-          : null,
-      )
+    try {
+      const res = await fetch("/api/cart", {
+        method: "delete",
+        body: JSON.stringify(productId),
+      });
+      !res.ok
+        ? (() => {
+            throw new Error("rollback");
+          })()
+        : null;
+    } catch (_) {
       // request fails → rollback cart state
-      .catch((_) => set({ cartItems: prevCart }));
+      set({ cartItems: prevCart });
+    }
   },
 
   // derived state
-  // totalItems: () => {} // let cmnt it do not store derived state
+  // totalItems: () => {} // let cmnt it, do not store derived state
 
   // reset
   logout: () => set(initialState),
