@@ -34,4 +34,23 @@ const decreaseQuantity = (id, set) =>
 
 const clearCart = (set) => set(() => ({ cartItems: [] }));
 
+// call 'set' inside helper breaks a key Zustand design principle
+// so 'state' instead of 'set'
+
+const addItemReducer = (item, state) => {
+  const isExist = state.cartItems.find((i) => i.id === item.id);
+  const cartItems = isExist
+    ? state.cartItems.map((i) =>
+        i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i,
+      )
+    : [...state.cartItems, { ...item, quantity: 1 }];
+
+  return { cartItems };
+};
+const removeItemReducer = (id, state) => {
+  const cartItems = state.cartItems.filter((item) => item.id !== id);
+  return { cartItems };
+};
+
 export { addItem, removeItem, increaseQuantity, decreaseQuantity, clearCart };
+export { addItemReducer, removeItemReducer };
