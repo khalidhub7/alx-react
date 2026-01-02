@@ -45,7 +45,7 @@ const useCartStore = create((set, get) => ({
 
 const AuthLayout = () => {
   const isAuthenticated = useAuthStore((s) => Boolean(s.token));
-  const user = useAuthStore((s) => s.user, shallow);
+  const user = useAuthStore((s) => s.user);
   return (
     <p>
       Status: {isAuthenticated ? "Authenticated" : "Guest"} | User:{" "}
@@ -65,8 +65,6 @@ const CartLayout = () => {
       0,
     ),
   );
-
-  const cartItems = useCartStore((s) => s.cartItems, shallow);
 
   return (
     <p>
