@@ -20,6 +20,7 @@ import { addItemReducer, removeItemReducer } from "./helpers";
 
 // hints
 // reducers must return same state if no change
+// no modal, no isOpen, no inputValue in Zustand stores
 
 const initialState = { user: null, token: null };
 // auth store
@@ -44,31 +45,32 @@ const useCartStore = create((set, get) => ({
 // selectors
 
 const AuthLayout = () => {
+  // derived state + selector-first pattern
   const isAuthenticated = useAuthStore((s) => Boolean(s.token));
-  const user = useAuthStore((s) => s.user);
+  // using shallow
+  const { user } = useAuthStore((s) => ({ user: s.user }), shallow);
+
   return (
-    <p>
-      Status: {isAuthenticated ? "Authenticated" : "Guest"} | User:{" "}
-      {user?.name ?? "None"}
-    </p>
+    <div>
+      <p>Authenticated: {String(isAuthenticated)}</p>
+      <p>User: {user?.name ?? "Guest"}</p>
+    </div>
   );
 };
 
 const CartLayout = () => {
   const itemsCount = useCartStore((s) =>
-    s.cartItems.reduce((acc, current) => acc + current.quantity, 0),
+    s.cartItems.reduce((acc, cur) => acc + cur.quantity, 0),
   );
 
   const totalPrice = useCartStore((s) =>
-    s.cartItems.reduce(
-      (acc, current) => acc + current.quantity * current.price,
-      0,
-    ),
+    s.cartItems.reduce((acc, cur) => acc + cur.quantity * cur.price, 0),
   );
 
   return (
-    <p>
-      Items: {itemsCount} | Total: ${totalPrice.toFixed(2)}
-    </p>
+    <div>
+      <p>Items: {itemsCount}</p>
+      <p>Total: ${totalPrice}</p>
+    </div>
   );
 };

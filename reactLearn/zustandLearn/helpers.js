@@ -1,5 +1,3 @@
-import isEqual from "lodash/isEqual";
-
 // two args: item, setter
 const addItem = (item, set) =>
   set((state) => {
@@ -36,23 +34,23 @@ const decreaseQuantity = (id, set) =>
 
 const clearCart = (set) => set(() => ({ cartItems: [] }));
 
-// call 'set' inside helper breaks a key Zustand design principle
-// so 'state' instead of 'set'
-// if nothing changes → return same state + same reference
+// call 'set' inside helper breaks zustand design principle
+// so the reducer should take 'state' instead of 'set'
 
 const addItemReducer = (item, state) => {
+  // in real apps, ensure to return the same state same ref if no changes
   const isExist = state.cartItems.find((i) => i.id === item.id);
   const cartItems = isExist
     ? state.cartItems.map((i) =>
         i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i,
       )
     : [...state.cartItems, { ...item, quantity: 1 }];
-
-  return isEqual(state.cartItems, cartItems) ? state : { cartItems };
+  return { cartItems };
 };
 const removeItemReducer = (id, state) => {
+  // in real apps, ensure to return the same state same ref if no changes
   const cartItems = state.cartItems.filter((item) => item.id !== id);
-  return isEqual(state.cartItems, cartItems) ? state : { cartItems };
+  return { cartItems };
 };
 
 export { addItem, removeItem, increaseQuantity, decreaseQuantity, clearCart };
