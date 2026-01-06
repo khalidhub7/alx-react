@@ -14,10 +14,8 @@ ZUSTAND — architecture design patterns:
 */
 
 import { create } from "zustand";
-import { addItemReducer, clearCartReducer, removeItemReducer } from "./helpers";
-
 import { addWishlistItem, clearWishlist, removeWishlistItem } from "./helpers";
-import { useEffect } from "react";
+import { addItemReducer, clearCartReducer, removeItemReducer } from "./helpers";
 
 // with zustand better to define global state in separated stores
 // global store
@@ -39,7 +37,6 @@ const initialAuth = { user: null, token: null };
 const useAuthStore = create((set, get) => ({
   ...initialAuth,
   // action
-  isAuthenticated: () => (get().token ? true : false), // shared derived state
   login: (user, token) => set({ user, token }),
   logout: () => set(initialAuth),
 }));
@@ -75,7 +72,7 @@ const useWishlistStore = create((set, get) => ({
 // stores NEVER talk to each other directly
 
 const CheckoutPage = () => {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isAuthenticated = useAuthStore((s) => Boolean(s.token));
   const cartItems = useCartStore((s) => s.cartItems);
   const totalPrice = cartItems.reduce(
     (acc, cur) => acc + cur.quantity * cur.price,
@@ -99,7 +96,7 @@ const CheckoutPage = () => {
   return (
     <div>
       <div>
-        <p>{isAuthenticated() ? "Logged in" : "Not logged in"}</p>
+        <p>{isAuthenticated ? "Logged in" : "Not logged in"}</p>
         <p>
           cartItems: {cartItems} totalPrice: {totalPrice}
         </p>
@@ -112,9 +109,9 @@ const CheckoutPage = () => {
 
 const Header = () => {
   const theme = useAppStore((s) => s.theme);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isAuthenticated = useAuthStore((s) => Boolean(s.token));
 
-  return <div>welcome {isAuthenticated() ? "Logged in" : "Not logged in"}</div>;
+  return <div>welcome {isAuthenticated ? "Logged in" : "Not logged in"}</div>;
 };
 
 // server state
