@@ -25,13 +25,11 @@ const useAppStore = create((set, get) => ({
   // state
   theme: "light",
   language: "en-us",
-  authSession: {},
 
   // actions
   toggleTheme: () =>
     set((s) => (s.theme === "light" ? { theme: "dark" } : { theme: "light" })),
   changeLang: (lang) => set({ language: lang }),
-  setSession: (obj) => set({ authSession: obj }),
 }));
 
 // auth store
@@ -65,9 +63,9 @@ const useWishlistStore = create((set, get) => ({
   wishList: [],
 
   // actions
-  addItem: (item) => set((s) => addWishlistItem(item, s)),
-  removeItem: (id) => set((s) => removeWishlistItem(id, s)),
-  clearCart: () => set(clearWishlist()),
+  addWishlistItem: (item) => set((s) => addWishlistItem(item, s)),
+  removeWishlistItem: (id) => set((s) => removeWishlistItem(id, s)),
+  clearWishlist: () => set(clearWishlist()),
 }));
 
 // ui orchestration (Component Layer)
@@ -76,42 +74,46 @@ const useWishlistStore = create((set, get) => ({
 // stores NEVER talk to each other directly
 
 const CheckoutPage = () => {
-  const authSession = useAuthStore((s) => s.authSession);
+  const isAuthenticated = useAuthStore((s) => (s.token ? true : false));
   const cartItems = useCartStore((s) => s.cartItems);
   const totalPrice = useCartStore((s) =>
     s.cartItems.reduce((acc, cur) => acc + cur.quantity * cur.price, 0),
   );
+  const clearCart = useCartStore((s) => s.clearCart);
+  const logoutAction = useAuthStore((s) => s.logout);
 
   // after checkout success should clear cart
-  useEffect(() => {
-    const t = setTimeout(() => {
-      console.log("checkout success");
-
-      useCartStore((s) => s.clearCart);
-    }, 2000);
-    return () => clearTimeout(t);
-  }, []);
+  const checkoutHandler = () => {
+    console.log("checkout success");
+    clearCart();
+  };
 
   // if user logs out the auth store should reset
-  useEffect(() => {
-    const t = setTimeout(() => {
-      console.log("user logsout success");
-      useAuthStore((s) => s.logout);
-    }, 2000);
-    return () => clearTimeout(t);
-  }, []);
+  const logoutHandler = () => {
+    console.log("user logsout success");
+    logoutAction();
+  };
 
-  return <div></div>;
+  return (
+    <div>
+      <div>
+        <p>{isAuthenticated ? "Logged in" : "Not logged in"}</p>
+        <p>
+          cartItems: {cartItems} totalPrice: {totalPrice}{" "}
+        </p>
+        <button onClick={checkoutHandler}>Pay Now</button>
+      </div>
+      <button onClick={logoutHandler}></button>
+    </div>
+  );
 };
 
 const Header = () => {
   const theme = useAppStore((s) => s.theme);
-  const session = useAppStore((s) => s.authSession);
-  const isAuthenticated = Object.keys(session).length > 0;
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => (s.token ? true : false));
 
-  return (
-    <div>welcome {isAuthenticated ? `${session.user.name}` : "Guest"}</div>
-  );
+  return <div>welcome {isAuthenticated ? `${user}` : "Guest"}</div>;
 };
 
 // server state
