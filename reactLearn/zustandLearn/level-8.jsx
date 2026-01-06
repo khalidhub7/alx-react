@@ -76,8 +76,9 @@ const useWishlistStore = create((set, get) => ({
 const CheckoutPage = () => {
   const isAuthenticated = useAuthStore((s) => (s.token ? true : false));
   const cartItems = useCartStore((s) => s.cartItems);
-  const totalPrice = useCartStore((s) =>
-    s.cartItems.reduce((acc, cur) => acc + cur.quantity * cur.price, 0),
+  const totalPrice = cartItems.reduce(
+    (acc, cur) => acc + cur.quantity * cur.price,
+    0,
   );
   const clearCart = useCartStore((s) => s.clearCart);
   const logoutAction = useAuthStore((s) => s.logout);
