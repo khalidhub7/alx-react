@@ -17,7 +17,7 @@ import { create } from "zustand";
 import { addWishlistItem, clearWishlist, removeWishlistItem } from "./helpers";
 import { addItemReducer, clearCartReducer, removeItemReducer } from "./helpers";
 
-// with zustand better to define global state in separated stores
+// with zustand better to define global state in separate store
 // global store
 const useAppStore = create((set, get) => ({
   // state
@@ -114,24 +114,17 @@ const Header = () => {
   return <div>welcome {isAuthenticated ? "Logged in" : "Not logged in"}</div>;
 };
 
-// server state
 /*
-data that come from server like products List should stored in react query
-not in zustand 
-zustand:      ui state
-react query:  server state
+data that comes from the server, like a product list, 
+should be stored in react query, not in zustand.
+zustand: ui / client state
+react query: server state
 */
 
 /*
-derived states should not stored in zustand store
-store should NOT fetch profile data bcs its a server state
-stores must not import each other to achieve comp orchestration pattern
-if we remove the cart feature (both should removed cart store and cart comp)
-this task is apply ui state pattern
+- derived state should not be stored in a zustand store
+- the store should not fetch profile data because it is server state
+- stores must not import each other to achieve the component orchestration pattern
+- if we remove the cart feature, both the cart store and cart component should be removed
+- this task applies the ui state pattern
 */
-
-// Derived state rule:
-// - UI-only or one-off → compute inside the component
-// - Global/shared domain logic (auth, permissions, totals)
-//   → expose as selector/getter in the store
-// - Never store duplicated derived values
