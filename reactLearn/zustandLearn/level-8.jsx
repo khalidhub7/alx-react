@@ -39,6 +39,7 @@ const initialAuth = { user: null, token: null };
 const useAuthStore = create((set, get) => ({
   ...initialAuth,
   // action
+  isAuthenticated: () => (get().token ? true : false), // shared derived state
   login: (user, token) => set({ user, token }),
   logout: () => set(initialAuth),
 }));
@@ -74,7 +75,7 @@ const useWishlistStore = create((set, get) => ({
 // stores NEVER talk to each other directly
 
 const CheckoutPage = () => {
-  const isAuthenticated = useAuthStore((s) => (s.token ? true : false));
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const cartItems = useCartStore((s) => s.cartItems);
   const totalPrice = cartItems.reduce(
     (acc, cur) => acc + cur.quantity * cur.price,
@@ -98,9 +99,9 @@ const CheckoutPage = () => {
   return (
     <div>
       <div>
-        <p>{isAuthenticated ? "Logged in" : "Not logged in"}</p>
+        <p>{isAuthenticated() ? "Logged in" : "Not logged in"}</p>
         <p>
-          cartItems: {cartItems} totalPrice: {totalPrice}{" "}
+          cartItems: {cartItems} totalPrice: {totalPrice}
         </p>
         <button onClick={checkoutHandler}>Pay Now</button>
       </div>
@@ -111,10 +112,9 @@ const CheckoutPage = () => {
 
 const Header = () => {
   const theme = useAppStore((s) => s.theme);
-  const user = useAuthStore((s) => s.user);
-  const isAuthenticated = useAuthStore((s) => (s.token ? true : false));
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  return <div>welcome {isAuthenticated ? `${user}` : "Guest"}</div>;
+  return <div>welcome {isAuthenticated() ? "Logged in" : "Not logged in"}</div>;
 };
 
 // server state
@@ -132,3 +132,9 @@ stores must not import each other to achieve comp orchestration pattern
 if we remove the cart feature (both should removed cart store and cart comp)
 this task is apply ui state pattern
 */
+
+// Derived state rule:
+// - UI-only or one-off → compute inside the component
+// - Global/shared domain logic (auth, permissions, totals)
+//   → expose as selector/getter in the store
+// - Never store duplicated derived values
