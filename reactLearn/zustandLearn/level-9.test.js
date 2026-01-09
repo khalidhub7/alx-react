@@ -38,20 +38,20 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
 
   // async action testing
   it("adds item to cart correctly", async () => {
-    const selectAddItem = useStore((s) => s.addToCart);
+    const selectAddItem = useStore.getState().addToCart;
     await selectAddItem(testProducts[0]);
 
-    const selectCartList = useStore((s) => s.cartItems);
+    const selectCartList = useStore.getState().cartItems;
     expect(selectAddItem.length).toBe(1);
     expect(selectCartList[0].id).toBe(2);
   });
 
   // async loading state testing
   it("sets loadingProducts=true when fetch starts", async () => {
-    const selectProductsFetcher = useStore((s) => s.fetchProducts);
+    const selectProductsFetcher = useStore.getState().fetchProducts;
     // intentionally not awaited
     selectProductsFetcher();
-    const loadingState = useStore((s) => s.loadingProducts);
+    const loadingState = useStore.getState().loadingProducts;
     expect(loadingState).toBe(true);
   });
 
@@ -65,9 +65,9 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
     };
     useStore.setState(testState);
 
-    const selectProducts = useStore((s) => s.products);
-    const selectProductError = useStore((s) => s.productError);
-    const selectLoadingProducts = useStore((s) => s.loadingProducts);
+    const selectProducts = useStore.getState().products;
+    const selectProductError = useStore.getState().productError;
+    const selectLoadingProducts = useStore.getState().loadingProducts;
 
     // assertions
     expect({
@@ -87,9 +87,9 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
     };
     useStore.setState(testState);
 
-    const selectProducts = useStore((s) => s.products);
-    const selectProductError = useStore((s) => s.productError);
-    const selectLoadingProducts = useStore((s) => s.loadingProducts);
+    const selectProducts = useStore.getState().products;
+    const selectProductError = useStore.getState().productError;
+    const selectLoadingProducts = useStore.getState().loadingProducts;
 
     // assertions
     expect({
@@ -121,9 +121,9 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
     useStore.setState(testStateOne);
     useStore.setState(testStateTwo);
 
-    const selectProducts = useStore((s) => s.products);
-    const selectProductError = useStore((s) => s.productError);
-    const selectLoadingProducts = useStore((s) => s.loadingProducts);
+    const selectProducts = useStore.getState().products;
+    const selectProductError = useStore.getState().productError;
+    const selectLoadingProducts = useStore.getState().loadingProducts;
 
     // assertions
     expect({
@@ -137,7 +137,7 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
   it("keeps cart item if server succeeds", async () => {
     // add 1 product with qty 1
     useStore.setState({ cartItems: [testProducts[0]] });
-    const selectAddToCart = useStore((s) => s.addToCart);
+    const selectAddToCart = useStore.getState().addToCart;
     // intentionally not awaited
     const triggerAdd = selectAddToCart(testProducts[0]); // post
 
@@ -155,7 +155,7 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
   it("rolls back cart when server fails", async () => {
     // add 1 product with qty 1
     useStore.setState({ cartItems: [testProducts[0]] });
-    const selectAddToCart = useStore((s) => s.addToCart);
+    const selectAddToCart = useStore.getState().addToCart;
     // intentionally not awaited
     const triggerAdd = selectAddToCart(testProducts[0]); // post
 
@@ -171,10 +171,10 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
   // reset / logout safety
 
   it("resets store correctly on logout", () => {
-    const selectLogout = useStore((s) => s.logout);
+    const selectLogout = useStore.getState().logout;
     selectLogout();
 
-    curState = useStore((s) => s);
+    curState = useStore.getState();
     expect(curState).toEqual(initialState);
   });
 });
