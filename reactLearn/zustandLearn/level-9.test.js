@@ -17,7 +17,6 @@ ZUSTAND — testing & debugging design patterns:
 - production-safety & confidence-driven debugging
 */
 
-import { use } from "react";
 import useStore from "./level-5";
 
 // backup store (reset store between tests)
@@ -42,7 +41,7 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
     await selectAddItem(testProducts[0]);
 
     const selectCartList = useStore.getState().cartItems;
-    expect(selectAddItem.length).toBe(1);
+    expect(selectCartList.length).toBe(1);
     expect(selectCartList[0].id).toBe(2);
   });
 
@@ -57,46 +56,50 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
 
   // async success path (happy path)
   it("stores products on successful fetch", async () => {
-    // assume products fetched with success
-    const testState = {
-      products: [testProducts[0]],
+    // mocks
+
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        json: () => Promise.resolve(testProducts),
+      }),
+    );
+
+    await useStore.getState().fetchProducts()
+
+    const expectedState = {
+      products: testProducts,
       loadingProducts: false,
       productError: null,
     };
-    useStore.setState(testState);
 
-    const selectProducts = useStore.getState().products;
-    const selectProductError = useStore.getState().productError;
-    const selectLoadingProducts = useStore.getState().loadingProducts;
+    const { products, productError, loadingProducts } = useStore.getState();
 
     // assertions
-    expect({
-      product: selectProducts,
-      loadingProducts: selectLoadingProducts,
-      productError: selectProductError,
-    }).toEqual(testState);
+    expect({ products, loadingProducts, productError }).toEqual(expectedState);
   });
 
   // async err path (unhappy path)
   it("sets error when fetch fails", async () => {
-    // assume products fetched with fail
-    const testState = {
+    // mocks
+
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        json: () => Promise.reject(new Error("internal server error")),
+      }),
+    );
+
+    await useStore.getState().fetchProducts()
+
+    const expectedState = {
       products: null,
       loadingProducts: false,
       productError: "internal server error",
     };
-    useStore.setState(testState);
 
-    const selectProducts = useStore.getState().products;
-    const selectProductError = useStore.getState().productError;
-    const selectLoadingProducts = useStore.getState().loadingProducts;
+    const { products, productError, loadingProducts } = useStore.getState();
 
     // assertions
-    expect({
-      product: selectProducts,
-      loadingProducts: selectLoadingProducts,
-      productError: selectProductError,
-    }).toEqual(testState);
+    expect({ products, loadingProducts, productError }).toEqual(expectedState);
   });
 
   // race condition protection testing
@@ -105,6 +108,14 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
     // - trigger fetchProducts twice
     // - resolve first request LAST
     // - expect store to keep latest response only
+
+    // mocks
+
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        json: () => Promise.resolve(testProducts),
+      }),
+    );
 
     const testStateOne = {
       products: testProducts[0],
@@ -178,3 +189,7 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
     expect(curState).toEqual(initialState);
   });
 });
+
+// what i learn
+// Mock the world. Test your brain.
+// world like: fetch or External things, brain: my own logic
