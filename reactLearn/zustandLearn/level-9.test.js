@@ -29,7 +29,7 @@ const testProducts = [
 
 describe("LEVEL 9 — Store Safety & Predictability", () => {
   beforeAll(() => {
-    initialState = useStore((s) => s); // backup
+    initialState = useStore.getState(); // backup
   });
 
   afterEach(() => {
