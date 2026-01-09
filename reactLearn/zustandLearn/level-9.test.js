@@ -28,7 +28,7 @@ const testProducts = [
 ];
 
 describe("LEVEL 9 — Store Safety & Predictability", () => {
-  beforeEach(() => {
+  beforeAll(() => {
     initialState = useStore((s) => s); // backup
   });
 
@@ -135,16 +135,12 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
 
   // optimistic update success
   it("keeps cart item if server succeeds", async () => {
-    // TODO:
-    // - mock POST /api/cart success
-    // - call addToCart
-    // - expect item to stay in cart
-
+    // add 1 product with qty 1
     useStore.setState({ cartItems: [testProducts[0]] });
-
     const selectAddToCart = useStore((s) => s.addToCart);
     // intentionally not awaited
     const triggerAdd = selectAddToCart(testProducts[0]); // post
+
     // here the qty should increase immediately without wait for api res
     expect(useStore.getState().cartItems[0].quantity).toBe(2);
 
@@ -157,20 +153,28 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
   // optimistic update - rollback
 
   it("rolls back cart when server fails", async () => {
-    // TODO:
-    // - mock POST /api/cart failure
-    // - call addToCart
-    // - expect cartItems restored to previous state
+    // add 1 product with qty 1
+    useStore.setState({ cartItems: [testProducts[0]] });
+    const selectAddToCart = useStore((s) => s.addToCart);
+    // intentionally not awaited
+    const triggerAdd = selectAddToCart(testProducts[0]); // post
+
+    // here the qty should increase immediately without wait for api res
+    expect(useStore.getState().cartItems[0].quantity).toBe(2);
+
+    // ensure the AddToCart finished
+    await triggerAdd;
+    // rollback should reset state and qty decreased
+    expect(useStore.getState().cartItems[0].quantity).toBe(2);
   });
 
   // reset / logout safety
 
   it("resets store correctly on logout", () => {
-    // TODO:
-    // - mutate store (cart + products)
-    // - call logout
-    // - expect store equals initial state
+    const selectLogout = useStore((s) => s.logout);
+    selectLogout();
 
-    useStore();
+    curState = useStore((s) => s);
+    expect(curState).toEqual(initialState);
   });
 });
