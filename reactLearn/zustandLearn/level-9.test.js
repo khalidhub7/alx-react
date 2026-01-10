@@ -28,7 +28,7 @@ const testProducts = [
 
 describe("test level-5.jsx learning file", () => {
   beforeAll(() => {
-    initialState = useStore.getState(); // backup
+    initialState = structuredClone(useStore.getState()); // backup
   });
   afterAll(() => {
     jest.restoreAllMocks();
@@ -54,11 +54,15 @@ describe("test level-5.jsx learning file", () => {
   // async loading state testing
   it("sets loadingProducts=true when fetch starts", async () => {
     const selectProductsFetcher = useStore.getState().fetchProducts;
-    // intentionally not awaited
 
     global.fetch = jest.fn(
-      () => new Promise((res) => setTimeout(() => res({}), 0)),
+      () =>
+        new Promise((res) =>
+          setTimeout(() => res({ json: () => Promise.resolve({}) }), 0),
+        ),
     );
+
+    // intentionally not awaited
     selectProductsFetcher();
     const loadingState = useStore.getState().loadingProducts;
     expect(loadingState).toBe(true);
@@ -93,9 +97,7 @@ describe("test level-5.jsx learning file", () => {
     // mocks
 
     global.fetch = jest.fn(() =>
-      Promise.resolve({
-        json: () => Promise.reject(new Error("internal server error")),
-      }),
+      Promise.reject(new Error("internal server error")),
     );
 
     await useStore.getState().fetchProducts();
@@ -150,10 +152,11 @@ describe("test level-5.jsx learning file", () => {
 
     await Promise.all([firstFetch, secondFetch]);
 
-    const { products } = useStore.getState();
+    const { products, currentProductsRequestId } = useStore.getState();
     expect(firstReqId !== secondReqId).toBe(true); // diff Ids
     expect(products.length).toBe(1);
     expect(products[0].id).toBe(2); // expected data
+    expect(currentProductsRequestId).toBe(secondReqId);
   });
 
   // optimistic update success
