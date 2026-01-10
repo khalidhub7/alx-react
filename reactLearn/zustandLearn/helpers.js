@@ -53,5 +53,27 @@ const removeItemReducer = (id, state) => {
   return { cartItems };
 };
 
+const clearCartReducer = () => ({ cartItems: [] });
+
+const addWishlistItem = (item, state) => {
+  const isExist = state.wishList.find((i) => i.id === item.id);
+
+  const wishList = isExist
+    ? state.wishList.map((i) =>
+        i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i,
+      )
+    : [...state.wishList, { ...item, quantity: 1 }];
+
+  return { wishList };
+};
+
+const removeWishlistItem = (id, state) => {
+  const wishList = state.wishList.filter((item) => item.id !== id);
+  return { wishList };
+};
+
+const clearWishlist = () => ({ wishList: [] });
+
 export { addItem, removeItem, increaseQuantity, decreaseQuantity, clearCart };
-export { addItemReducer, removeItemReducer };
+export { addItemReducer, removeItemReducer, clearCartReducer };
+export { addWishlistItem, removeWishlistItem, clearWishlist };
