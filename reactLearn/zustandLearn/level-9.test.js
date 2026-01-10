@@ -26,13 +26,19 @@ const testProducts = [
   { id: 3, name: "keyboard", price: 50 },
 ];
 
-describe("LEVEL 9 — Store Safety & Predictability", () => {
+describe("test level-5.jsx learning file", () => {
   beforeAll(() => {
     initialState = useStore.getState(); // backup
+  });
+  afterAll(() => {
+    jest.restoreAllMocks();
   });
 
   afterEach(() => {
     useStore.setState(initialState, true); // restore
+    if (global.fetch?.mockClear) {
+      global.fetch.mockClear();
+    }
   });
 
   // async action testing
@@ -49,6 +55,10 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
   it("sets loadingProducts=true when fetch starts", async () => {
     const selectProductsFetcher = useStore.getState().fetchProducts;
     // intentionally not awaited
+
+    global.fetch = jest.fn(
+      () => new Promise((res) => setTimeout(() => res({}), 0)),
+    );
     selectProductsFetcher();
     const loadingState = useStore.getState().loadingProducts;
     expect(loadingState).toBe(true);
@@ -152,6 +162,11 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
     useStore.setState({ cartItems: [testProducts[0]] });
     const selectAddToCart = useStore.getState().addToCart;
     // intentionally not awaited
+
+    global.fetch = jest.fn(
+      () => new Promise((res) => setTimeout(() => res({ ok: true }), 100)),
+    );
+
     const triggerAdd = selectAddToCart(testProducts[0]); // post
 
     // here the qty should increase immediately without wait for api res
@@ -169,6 +184,11 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
     // add 1 product with qty 1
     useStore.setState({ cartItems: [testProducts[0]] });
     const selectAddToCart = useStore.getState().addToCart;
+
+    // mock
+    global.fetch = jest.fn(
+      () => new Promise((res) => setTimeout(() => res({ ok: false }), 100)),
+    );
     // intentionally not awaited
     const triggerAdd = selectAddToCart(testProducts[0]); // post
 
@@ -178,7 +198,7 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
     // ensure the AddToCart finished
     await triggerAdd;
     // rollback should reset state and qty decreased
-    expect(useStore.getState().cartItems[0].quantity).toBe(2);
+    expect(useStore.getState().cartItems[0].quantity).toBe(1);
   });
 
   // reset / logout safety
@@ -187,7 +207,7 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
     const selectLogout = useStore.getState().logout;
     selectLogout();
 
-    curState = useStore.getState();
+    const curState = useStore.getState();
     expect(curState).toEqual(initialState);
   });
 });
