@@ -64,7 +64,7 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
       }),
     );
 
-    await useStore.getState().fetchProducts()
+    await useStore.getState().fetchProducts();
 
     const expectedState = {
       products: testProducts,
@@ -88,7 +88,7 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
       }),
     );
 
-    await useStore.getState().fetchProducts()
+    await useStore.getState().fetchProducts();
 
     const expectedState = {
       products: null,
@@ -104,44 +104,46 @@ describe("LEVEL 9 — Store Safety & Predictability", () => {
 
   // race condition protection testing
   it("ignores outdated fetch responses", async () => {
-    // TODO:
-    // - trigger fetchProducts twice
-    // - resolve first request LAST
-    // - expect store to keep latest response only
+    /* 
+    fetch 1   resolves late
+    fetch 2   resolves early
+    */
 
-    // mocks
-
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        json: () => Promise.resolve(testProducts),
-      }),
+    // mock first result
+    global.fetch = jest.fn(
+      () =>
+        new Promise((res) =>
+          setTimeout(
+            () => res({ json: () => Promise.resolve([testProducts[1]]) }),
+            2000,
+          ),
+        ),
     );
 
-    const testStateOne = {
-      products: testProducts[0],
-      loadingProducts: false,
-      productError: null,
-    };
-    const testStateTwo = {
-      products: testProducts[1],
-      loadingProducts: false,
-      productError: null,
-    };
+    const selectFetchProducts = useStore.getState().fetchProducts;
 
-    // lets mock res 1 and res 2
-    useStore.setState(testStateOne);
-    useStore.setState(testStateTwo);
+    const firstFetch = selectFetchProducts(); // intentionally not awaited
+    const firstReqId = useStore.getState().currentProductsRequestId;
 
-    const selectProducts = useStore.getState().products;
-    const selectProductError = useStore.getState().productError;
-    const selectLoadingProducts = useStore.getState().loadingProducts;
+    // mock second result
+    global.fetch = jest.fn(
+      () =>
+        new Promise((res) =>
+          setTimeout(
+            () => res({ json: () => Promise.resolve([testProducts[0]]) }),
+            200,
+          ),
+        ),
+    );
+    const secondFetch = selectFetchProducts(); // intentionally not awaited
+    const secondReqId = useStore.getState().currentProductsRequestId;
 
-    // assertions
-    expect({
-      product: selectProducts,
-      loadingProducts: selectLoadingProducts,
-      productError: selectProductError,
-    }).toEqual(testStateTwo);
+    await Promise.all([firstFetch, secondFetch]);
+
+    const { products } = useStore.getState();
+    expect(firstReqId !== secondReqId).toBe(true); // diff Ids
+    expect(products.length).toBe(1);
+    expect(products[0].id).toBe(2); // expected data
   });
 
   // optimistic update success
