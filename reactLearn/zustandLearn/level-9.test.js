@@ -19,8 +19,7 @@ ZUSTAND — testing & debugging design patterns:
 
 import useStore from "./level-5";
 
-// backup store (reset store between tests)
-let initialState;
+let initialState; // backup store (reset store between tests)
 const testProducts = [
   { id: 2, name: "mouse", price: 20 },
   { id: 3, name: "keyboard", price: 50 },
@@ -73,9 +72,7 @@ describe("test level-5.jsx learning file", () => {
     // mocks
 
     global.fetch = jest.fn(() =>
-      Promise.resolve({
-        json: () => Promise.resolve(testProducts),
-      }),
+      Promise.resolve({ json: () => Promise.resolve(testProducts) }),
     );
 
     await useStore.getState().fetchProducts();
