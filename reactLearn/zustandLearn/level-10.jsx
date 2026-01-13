@@ -17,7 +17,7 @@ ZUSTAND — pro architecture design patterns:
 */
 import React from "react";
 import { create } from "zustand";
-import { devtools, persist } from "zustand/middleware";
+import { devtools, persist, createJSONStorage } from "zustand/middleware";
 
 const initialAppState = { theme: "light", language: "en" };
 
@@ -47,7 +47,9 @@ const useAppStore = create(
         name: "app-storage",
         // version + migrate pattern
         version: 2,
-        migrate: (s, v) => (v === 2 ? { ...s, currency: "USD" } : s),
+        storage: createJSONStorage(() => localStorage),
+        migrate: (s, v) => (v < 2 ? { ...s, currency: "USD" } : s),
+        partialize: (s) => ({ theme: s.theme, language: s.language }),
       },
     ),
     // second param of devtools (options)
