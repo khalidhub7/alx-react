@@ -35,9 +35,13 @@ const useAppStore = create(
 
         // actions
         toggleTheme: () =>
-          set((s) => ({
-            theme: s.theme === "light" ? "dark" : "light",
-          })),
+          set(
+            (s) => ({
+              theme: s.theme === "light" ? "dark" : "light",
+            }),
+            false,
+            "app/toggledTheme",
+          ),
 
         changeLanguage: (lang) => set({ language: lang }),
         resetAppStore: () => set(initialAppState, true),
