@@ -44,7 +44,7 @@ const useAppStore = create(
         name: "app-storage",
         // version + migrate pattern
         version: 1,
-        migrate: () => {},
+        migrate: (s) => s,
       },
     ),
     // second param of devtools (options)
@@ -178,8 +178,8 @@ const CheckoutPage = () => {
   return (
     <div>
       <p>Total: {totalPrice}</p>
-      <button onClick={checkoutHandler}>Checkout</button>
-      <button onClick={logoutHandler}>Logout</button>
+      <button onClick={checkoutHandler}>checkout</button>
+      <button onClick={logoutHandler}>logout</button>
     </div>
   );
 };
@@ -190,9 +190,17 @@ const Header = () => {
   const hydrated = useAuthStore((s) => s.hydrated);
   const user = useAuthStore((s) => s.user);
 
+  const lang = useAppStore((s) => s.language);
+
   if (!hydrated) return <p>loading auth...</p>;
 
-  return <p>{user ? "Logged in" : "Guest"}</p>;
+  return (
+    <div style={{ display: "flex", justifyContent: "space-around" }}>
+      <p>{user ? "logged in" : "guest"}</p>
+      <p>language: {lang}</p>
+      <button>toggle theme</button>
+    </div>
+  );
 };
 
 const App = () => (
