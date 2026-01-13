@@ -29,7 +29,10 @@ const useAppStore = create(
       // first param or persist (store def)
       (set, get) => ({
         // state
-        ...initialAppState,
+        // ...initialAppState, (migrated)
+        // new migrated state shape
+        ...{ ...initialAppState, currency: "USD" },
+
         // actions
         toggleTheme: () =>
           set((s) => ({
@@ -43,8 +46,8 @@ const useAppStore = create(
       {
         name: "app-storage",
         // version + migrate pattern
-        version: 1,
-        migrate: (s) => s,
+        version: 2,
+        migrate: (s, v) => (v === 2 ? { ...s, currency: "USD" } : s),
       },
     ),
     // second param of devtools (options)
@@ -187,10 +190,13 @@ const CheckoutPage = () => {
 // hydration aware ui
 
 const Header = () => {
+  // states
   const hydrated = useAuthStore((s) => s.hydrated);
   const user = useAuthStore((s) => s.user);
-
   const lang = useAppStore((s) => s.language);
+  const theme = useAppStore((s) => s.theme);
+  // actions
+  const toggleTheme = useAppStore((s) => s.toggleTheme);
 
   if (!hydrated) return <p>loading auth...</p>;
 
@@ -198,7 +204,7 @@ const Header = () => {
     <div style={{ display: "flex", justifyContent: "space-around" }}>
       <p>{user ? "logged in" : "guest"}</p>
       <p>language: {lang}</p>
-      <button>toggle theme</button>
+      <button onClick={toggleTheme}>{theme}</button>
     </div>
   );
 };
