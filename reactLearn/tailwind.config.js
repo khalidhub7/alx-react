@@ -1,5 +1,5 @@
 export default {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: { extend: {} },
-  plugins: [],
+  plugins: [], // about ready styles (to learn later)
 };
