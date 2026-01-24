@@ -1,4 +1,25 @@
 @import "tailwindcss";
 
+/* task 1 styles */
 
-/* later add @apply styles should be here */
+.btn {
+  @apply rounded bg-blue-500 p-2 font-mono text-sm text-white transition-colors duration-300 hover:scale-[1.05] hover:bg-blue-800;
+}
+
+.card {
+  @apply max-w-xs rounded bg-white p-2 shadow transition-transform duration-300 hover:scale-[1.01] hover:shadow-md lg:max-w-sm;
+}
+
+.card-title {
+  @apply font-semibold;
+}
+
+.card-desc {
+  @apply text-sm text-gray-600;
+}
+.card-footer {
+  @apply mt-3 flex justify-between;
+}
+.card-price {
+  @apply font-bold text-red-500;
+}
