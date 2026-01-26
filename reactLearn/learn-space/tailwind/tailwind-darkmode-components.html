@@ -6,13 +6,13 @@
     <title>tailwind card challenge</title>
     <!-- import tailwind -->
     <link rel="stylesheet" href="output.css" />
-    <link rel="stylesheet" href="input.css" />
+    <script src="./scripts/darkMode.js" defer></script>
   </head>
   <body>
     <!-- task 1 -->
 
     <header
-      class="flex h-16 items-center justify-around border-b border-gray-300 shadow"
+      class="flex h-16 items-center justify-around border-b border-gray-300 bg-gray-100 shadow dark:bg-slate-700"
     >
       <div class="flex h-full w-2xs items-center justify-around">
         <img
@@ -33,7 +33,7 @@
           ☰
         </label>
         <ul
-          class="lg: absolute top-20 right-2.5 hidden w-50 rounded-tl-lg rounded-bl-lg border border-r-0 border-none border-gray-300 bg-stone-100 p-4 peer-checked:block lg:static lg:flex lg:w-full lg:gap-28 lg:bg-transparent"
+          class="absolute top-20 right-2.5 hidden w-50 rounded-tl-lg rounded-bl-lg border border-r-0 border-none border-gray-300 bg-stone-100 p-4 peer-checked:block lg:static lg:flex lg:w-full lg:gap-28 lg:bg-transparent lg:peer-checked:flex"
         >
           <li class="link-item"><a href="">home</a></li>
           <li class="link-item"><a href="">shop</a></li>
@@ -41,10 +41,18 @@
           <li class="link-item"><a href="">contact</a></li>
         </ul>
       </nav>
+
+      <button
+        id="darkMode"
+        class="absolute right-4 h-8 w-8 rounded-full hover:scale-[1.05] hover:border hover:border-fuchsia-500"
+      >
+        <img
+          src="https://img.icons8.com/?size=100&id=JARydttrNTU2&format=png&color=000000"
+        />
+      </button>
     </header>
 
-    <!-- <main class="flex h-screen w-screen items-center justify-center">
-      
+    <main class="flex h-screen w-screen items-center justify-center">
       <div class="card">
         <img
           class="max-h-70 w-full rounded-tl rounded-tr"
@@ -64,6 +72,6 @@
           </div>
         </div>
       </div>
-    </main> -->
+    </main>
   </body>
 </html>
