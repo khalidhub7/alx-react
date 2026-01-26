@@ -5,7 +5,7 @@
 /* header */
 
 .link-item {
-  @apply w-full hover:border-b-2 hover:border-b-fuchsia-300 hover:shadow;
+  @apply w-fit hover:border-b-2 hover:border-b-fuchsia-300 hover:shadow;
 }
 
 /* main */

@@ -12,7 +12,7 @@
     <!-- task 1 -->
 
     <header
-      class="flex h-16 items-center justify-between border-b border-gray-300 shadow"
+      class="flex h-16 items-center justify-around border-b border-gray-300 shadow"
     >
       <div class="flex h-full w-2xs items-center justify-around">
         <img
@@ -23,17 +23,17 @@
         <span class="font-mono">shop space</span>
       </div>
 
-      <nav class=" h-full w-16">
-        <input type="checkbox" id="show" hidden  />
+      <nav class="flex h-full items-center justify-center lg:w-2/5">
+        <input type="checkbox" id="show" hidden class="peer" />
         <label
           for="show"
           aria-label="Open menu"
-          class="flex justify-center items-center  mr-6 h-8 w-8 rounded-full border-gray-300 transition-transform hover:scale-[1.05] hover:border-2 hover:bg-gray-300"
+          class="mr-6 flex h-8 w-8 items-center justify-center rounded-full border-gray-300 transition-transform hover:scale-[1.05] hover:border-2 hover:bg-gray-300 lg:hidden"
         >
           ☰
         </label>
         <ul
-          class="absolute top-20 right-2.5 w-50 rounded-tl-lg rounded-bl-lg border border-r-0 border-gray-300 bg-stone-100 p-4"
+          class="lg: absolute top-20 right-2.5 hidden w-50 rounded-tl-lg rounded-bl-lg border border-r-0 border-none border-gray-300 bg-stone-100 p-4 peer-checked:block lg:static lg:flex lg:w-full lg:gap-28 lg:bg-transparent"
         >
           <li class="link-item"><a href="">home</a></li>
           <li class="link-item"><a href="">shop</a></li>
