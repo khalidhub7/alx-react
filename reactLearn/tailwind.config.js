@@ -6,7 +6,7 @@ const obj = {
   theme: {
     extend: {
       colors: {
-        primary: "#0000FF", // blue
+        DEFAULT: "#152C3B",
       },
       boxShadow: {
         soft: "0 4px 12px rgba(0, 0, 0, 0.1)",
