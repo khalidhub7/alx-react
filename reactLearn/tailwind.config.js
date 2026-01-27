@@ -1,7 +1,8 @@
 const obj = {
-  content: ["./src/**/*.{js,jsx,ts,tsx}", "./learn-space/tailwind/*"],
+  content: ["./src/**/*.{js,jsx,ts,tsx}", "./learn-space/tailwind/*.html"],
   plugins: [],
-  darkMode: "class",
+  // tailwind 4 no longer support darkMode: "class" so use css way instead
+  // darkMode: "class",
   theme: {
     extend: {
       colors: {

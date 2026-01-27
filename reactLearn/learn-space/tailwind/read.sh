@@ -1,7 +1,11 @@
 
 # use tailwind locally
 # development: auto rebuild, no cleanup
-npm exec @tailwindcss/cli -- -i input.css -o output.css --watch
+npm exec @tailwindcss/cli -- \
+-i input.css \
+-o output.css \
+--watch \
+--config ../../tailwind.config.js
 # production: one build, clean + minified
 NODE_ENV=production npx tailwindcss -i input.css -o output.css --minify
 

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* fix dark mode: make it follow the class not system */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* task 1 styles */
 
 /* header */
