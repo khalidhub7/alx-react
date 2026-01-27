@@ -5,15 +5,17 @@ const obj = {
   // darkMode: "class",
   theme: {
     extend: {
-      colors: {
-        DEFAULT: "#152C3B",
+      /* colors: {
+        primary: {
+          DEFAULT: "#152C3B",
+        },
       },
       boxShadow: {
         soft: "0 4px 12px rgba(0, 0, 0, 0.1)",
       },
       fontFamily: {
         main: ["Inter", "sans-serif"],
-      },
+      }, */
     },
   },
 };
