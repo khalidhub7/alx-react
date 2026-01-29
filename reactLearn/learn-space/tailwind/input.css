@@ -5,9 +5,10 @@
 
 /* no theme.extend.colors use css way */
 @theme {
-  --color-primary: #1a3445;
+  --color-primary: oklch(66.7% 0.295 322.15); /* fuchsia-500 */
+  --color-surface-dark: oklch(37.2% 0.044 257.287); /* slate-700 */
   --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --font-main: Inter, sans-serif;
+  --font-main: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* task 1 styles */
@@ -15,7 +16,7 @@
 /* header */
 
 .link-item {
-  @apply w-fit hover:border-b-2 hover:border-b-fuchsia-300 hover:shadow dark:text-amber-50;
+  @apply hover:border-b-primary w-fit hover:border-b-2 hover:shadow dark:text-amber-50;
 }
 
 /* main */
@@ -29,7 +30,7 @@
 }
 
 .card-title {
-  @apply font-semibold group-hover:text-fuchsia-500 dark:text-amber-50 dark:group-hover:text-yellow-400;
+  @apply group-hover:text-primary font-semibold dark:text-amber-50 dark:group-hover:text-yellow-400;
 }
 
 .card-desc {
