@@ -1,0 +1,8 @@
+
+/* 
+tailwind never see dynamic value like {`bg-${color}-500`}
+
+This tells Tailwind: always keep these classes, even if not detected.
+*/
+
+@source inline("bg-red-500 bg-blue-500 bg-green-500");
