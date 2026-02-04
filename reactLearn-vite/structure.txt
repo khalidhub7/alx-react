@@ -1,0 +1,29 @@
+.
+├── README.md
+├── components.json
+├── eslint.config.js
+├── index.html
+├── learn-space
+│   └── chadcn-ui-learn
+│       ├── components
+│       │   └── ui
+│       │       └── button.tsx
+│       ├── lib
+│       │   └── utils.ts
+│       └── page.tsx
+├── package.json
+├── public
+├── setup.sh
+├── src
+│   ├── App.css
+│   ├── App.tsx
+│   ├── assets
+│   ├── index.css
+│   └── main.tsx
+├── structure.txt
+├── tsconfig.app.json
+├── tsconfig.json
+├── tsconfig.node.json
+└── vite.config.ts
+
+8 directories, 18 files
