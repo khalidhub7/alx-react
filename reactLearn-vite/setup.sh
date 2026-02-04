@@ -12,6 +12,7 @@ npm install tailwindcss @tailwindcss/vite
 
 # chadcn
 npx shadcn@latest init
+npx shadcn@latest add button
 
 
 tree -I "node_modules|package-lock.json" . > structure.txt
