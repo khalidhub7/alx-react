@@ -41,7 +41,7 @@ const formSchema = z.object({
     .max(100, "Description must be at most 100 characters."),
 });
 
-export default function BugReportForm() {
+const BugReportForm = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -50,7 +50,7 @@ export default function BugReportForm() {
     },
   });
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
+  const onSubmit = (data: z.infer<typeof formSchema>) => {
     toast("You submitted the following values:", {
       description: (
         <pre className="bg-code text-code-foreground mt-2 w-[320px] overflow-x-auto rounded-md p-4">
@@ -65,7 +65,7 @@ export default function BugReportForm() {
         "--border-radius": "calc(var(--radius)  + 4px)",
       } as React.CSSProperties,
     });
-  }
+  };
 
   return (
     <Card className="w-full sm:max-w-md">
@@ -147,4 +147,6 @@ export default function BugReportForm() {
       </CardFooter>
     </Card>
   );
-}
+};
+
+export default BugReportForm;
