@@ -7,7 +7,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["learn-space/chadcn-ui-learn/*"]
+      "@/*": ["./learn-space/chadcn-ui-learn/*"]
     }
   }
 }

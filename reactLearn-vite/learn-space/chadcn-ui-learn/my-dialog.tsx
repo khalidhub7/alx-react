@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 
+/* Type 2 = Stateful (Radix-powered) Components */
+
 const myDialog = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [firstRender, setFirstRender] = useState(true);
