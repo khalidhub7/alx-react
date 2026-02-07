@@ -1,34 +1,17 @@
 "use client";
-
+import * as z from "zod";
+import { toast } from "sonner";
 import * as React from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
-import * as z from "zod";
-
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupText,
-  InputGroupTextarea,
-} from "@/components/ui/input-group";
+import { FieldGroup, FieldLabel } from "@/components/ui/field";
+import { CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription } from "@/components/ui/card";
+import { Field, FieldDescription, FieldError } from "@/components/ui/field";
+import { InputGroup, InputGroupTextarea } from "@/components/ui/input-group";
+import { InputGroupText, InputGroupAddon } from "@/components/ui/input-group";
 
 const formSchema = z.object({
   title: z
@@ -44,7 +27,6 @@ const formSchema = z.object({
 /* console.log(formSchema) */
 
 export default function BugReportForm() {
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
