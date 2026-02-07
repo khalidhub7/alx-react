@@ -13,6 +13,8 @@ import { Field, FieldDescription, FieldError } from "@/components/ui/field";
 import { InputGroup, InputGroupTextarea } from "@/components/ui/input-group";
 import { InputGroupText, InputGroupAddon } from "@/components/ui/input-group";
 
+/* Type 3: Complex / Composed Components */
+
 const formSchema = z.object({
   title: z
     .string()
