@@ -1,6 +1,7 @@
 npx create-next-app@latest app-basics
 prettier --write --print-width 80 file
 
+tree -I node_modules ../app-basics > struct.txt
 
 npx shadcn@latest init
 npx shadcn@latest add avatar
