@@ -11,3 +11,4 @@ npx shadcn@latest add avatar
 for f in $(find app -type f ! -name "*.css"); do echo "=== $f ===" >> \
 output.txt; cat "$f" >> output.txt; echo "" >> output.txt; done
 
+npx ts-node test.ts
