@@ -19,3 +19,4 @@ sudo apt install redis-server
 npm install ioredis
 
 redis-server # run redis server
+redis-cli ping  # should return PONG
