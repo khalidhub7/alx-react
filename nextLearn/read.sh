@@ -1,14 +1,21 @@
+# setup nextJs
 npx create-next-app@latest app-basics
+
+# formatter
 prettier --write --print-width 80 file
 
-
+# save project structure
 tree ../app-basics/ -I 'node_modules/' > docs/structure.txt
 
+# chadcn setup
 npx shadcn@latest init
 npx shadcn@latest add avatar
 
-# dump app
-for f in $(find app -type f ! -name "*.css"); do echo "=== $f ===" >> \
-output.txt; cat "$f" >> output.txt; echo "" >> output.txt; done
-
+# run sigle ts file
 npx ts-node test.ts
+
+# setup redis
+sudo apt install redis-server
+npm install ioredis
+
+redis-server # run redis server
