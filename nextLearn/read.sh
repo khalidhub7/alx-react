@@ -20,3 +20,7 @@ npm install ioredis
 
 redis-server # run redis server
 redis-cli ping  # should return PONG
+
+
+# search files that used x func
+rg "getCartItems" -g '!node_modules' -g '!.next'
