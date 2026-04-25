@@ -24,3 +24,8 @@ redis-cli ping  # should return PONG
 
 # search files that used x func
 rg "getCartItems" -g '!node_modules' -g '!.next'
+
+# storage files
+mkdir -p storage/auth storage/cart && \
+touch storage/auth/sessions.json storage/auth/users.json && \
+touch storage/cart/carts.json
