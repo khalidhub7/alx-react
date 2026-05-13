@@ -29,3 +29,24 @@ rg "getCartItems" -g '!node_modules' -g '!.next'
 mkdir -p storage/auth storage/cart && \
 touch storage/auth/sessions.json storage/auth/users.json && \
 touch storage/cart/carts.json
+
+# dump a dir
+
+find features/auth -type f | while read file; do
+  {
+    echo "FILE: $file"
+    echo "----------------------------------------"
+    cat "$file"
+    echo
+    echo "========================================"
+    echo
+  } >> ../dump.txt
+done
+
+# reset storage
+find storage -type f \
+! -name "emailIndex.json" \
+! -name "userCartIndex.json" \
+-delete && \
+echo "{}" > storage/auth/emailIndex.json && \
+echo "{}" > storage/cart/userCartIndex.json
