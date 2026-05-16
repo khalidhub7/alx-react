@@ -1,633 +1,429 @@
-FILE: features/auth/server.ts
+]633;E;find features/cart -type f;3271259c-c7c6-45cf-8bfc-71f8ad48ff90]633;CFILE: features/cart/server.ts
 ----------------------------------------
 // export server comps
-export { requireUser } from "./guard";
-export { getSession } from "./db/session";
-export { hashSessionId } from "./service";
-export { isSessionValid } from "./session.helpers";
-
-/* 
-hint:
-'getSession' is low level func
-rule: dont export low lvl func
-so 'getSession' exported temporarily
-
-in future i think the session should be fetched from redis
-*/
+export { getCartItems } from "./queries";
+export { getCartIdByUserId } from "./db/cart";
 
 ========================================
 
-FILE: features/auth/types/session.ts
+FILE: features/cart/types/cart.ts
 ----------------------------------------
-interface Session {
-  userId: string;
-  revoked?: boolean;
-  sessionId: string;
-  createdAt: string;
-  expiresAt: string;
+interface CartItem {
+  id: string;
+  qty: number;
+  title: string;
+  price: number;
 }
 
-export type { Session };
-
-========================================
-
-FILE: features/auth/types/user.ts
-----------------------------------------
-interface User {
+interface Cart {
   id: string;
-  name: string;
-  email: string;
-  password: string;
+  userId: string;
+  items: CartItem[];
   createdAt: string;
   updatedAt: string;
 }
 
-interface CreateUserData {
-  name: string;
-  email: string;
-  password: string;
-}
-
-export type { User, CreateUserData };
+export type { CartItem, Cart };
 
 ========================================
 
-FILE: features/auth/guard.ts
+FILE: features/cart/service.ts
 ----------------------------------------
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { getSession, deleteSession } from "./db/session";
-import { isSessionValid } from "./session.helpers";
-import { hashSessionId } from "./service";
+import { CartItem } from "./types/cart";
+import { getCart, updateCart } from "./db/cart";
+import { fetchProductById } from "../products/server";
+import { getCartByUserId, deleteCart } from "./db/cart";
 
-const requireUser = async (redirectTo: string) => {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("sessionId")?.value;
+/* cart.ts (db)    → read/write storage
+service.ts         → orchestrate (calls db + products)
+actions.ts         → entry point (cookies, revalidate, call service)
+queries.ts         → read-only (session check + get cart items) */
 
-  if (!sessionId) redirect(`/login?redirect=${redirectTo}`);
+const getValidCartByUserId = async (userId: string) => {
+  const CART_TTL = 1000 * 60 * 60 * 24 * 3;
+  const cart = await getCartByUserId(userId);
 
-  const session = await getSession(hashSessionId(sessionId));
-  if (!session) {
-    cookieStore.delete("sessionId");
-    redirect(`/login?redirect=${redirectTo}`);
+  if (!cart) return undefined;
+  const expired = Date.now() - new Date(cart.updatedAt).getTime() > CART_TTL;
+  if (expired) {
+    await deleteCart(userId, cart.id);
+    return undefined;
   }
-
-  const isValid = isSessionValid(session);
-
-  if (!isValid) {
-    await deleteSession(hashSessionId(sessionId));
-    cookieStore.delete("sessionId");
-    redirect(`/login?redirect=${redirectTo}`);
-  }
-
-  return session.userId;
+  return cart;
 };
 
-export { requireUser };
-
-========================================
-
-FILE: features/auth/service.ts
-----------------------------------------
-// helpers (business logic)
-
-import bcrypt from "bcrypt";
-import crypto from "node:crypto";
-import { createSession } from "./session.helpers";
-import { getUserByEmail, createUser } from "./db/user";
-import { saveSession, deleteSession } from "./db/session";
-
-// helpers
-const comparePassword = async (
-  plainPwd: string,
-  hashedPwd: string,
-): Promise<boolean> => {
-  return await bcrypt.compare(plainPwd, hashedPwd);
-};
-const hashPassword = async (password: string) => {
-  return await bcrypt.hash(password, 10);
-};
-const hashSessionId = (sessionId: string) => {
-  return crypto.createHash("sha256").update(sessionId).digest("hex");
-};
-
-// get user > check password > create session > return sessionId
-const login = async (email: string, password: string) => {
-  const user = await getUserByEmail(email);
-
-  if (!user) throw new Error("user not found");
-  if (!(await comparePassword(password, user.password))) {
-    throw new Error("invalid credentials");
-  }
-
-  // create session
-  const session = createSession(user.id);
-  await saveSession({
-    ...session,
-    sessionId: hashSessionId(session.sessionId),
-  });
-  return { sessionId: session.sessionId };
-};
-
-// check if user exists > hash password > create user > return userId
-const register = async (email: string, password: string, name: string) => {
-  const hashedPassword = await hashPassword(password);
-  const userData = {
-    email,
-    password: hashedPassword,
-    name,
-  };
-  // this throw if the email already exist
-  const userId = await createUser(userData);
-  if (!userId) throw new Error("Failed to create user");
-
-  // create session
-  const session = createSession(userId);
-  await saveSession({
-    ...session,
-    sessionId: hashSessionId(session.sessionId),
-  });
-  return { sessionId: session.sessionId, userId };
-};
-
-const logout = async (sessionId: string) => {
-  if (!sessionId) return;
-  // hmm cookie also should removed
-  await deleteSession(hashSessionId(sessionId)); // from db
-};
-
-export { login, register, logout, hashSessionId };
-
-========================================
-
-FILE: features/auth/db/session.ts
-----------------------------------------
-/* db access layer */
-/* idea
-
-Now (fake DB)
-storage/auth/sessions & userSessions = source of truth
-db/session.ts = reads/writes files
-
-Later (real DB)
-DELETE storage/ folder
-db/session.ts → connects to real DB
-*/
-
-import path from "path";
-import { Session } from "../types/session";
-import { readFile, writeFile, mkdir, unlink } from "fs/promises";
-
-// helpers
-const deleteFile = async (filePath: string): Promise<boolean> => {
-  try {
-    await unlink(filePath);
-    return true;
-  } catch {
-    return false; // file may not exist
-  }
-};
-
-// create files
-const sessionsDir = path.join(process.cwd(), "storage", "auth", "sessions");
-
-const userSessionsDir = path.join(
-  process.cwd(),
-  "storage",
-  "auth",
-  "userSessions",
-);
-
-await mkdir(sessionsDir, { recursive: true });
-await mkdir(userSessionsDir, { recursive: true });
-
-// types
-type Task = () => Promise<any>;
-
-// setup queues
-const sessionQueues = new Map(); // ensure session queues ordered
-const userSessionsQueue = new Map(); // ensure userSessions queues ordered
-
-const appendToSessionQueue = async (sessionId: string, task: Task) => {
-  const queue = sessionQueues.get(sessionId) || Promise.resolve();
-
-  const result = queue.then(task);
-
-  sessionQueues.set(
-    sessionId,
-    result.catch(() => {}),
-  );
-
-  return result;
-};
-const appendToUserSessionsQueue = async (userId: string, task: Task) => {
-  const queue = userSessionsQueue.get(userId) || Promise.resolve();
-
-  const result = queue.then(task);
-
-  userSessionsQueue.set(
-    userId,
-    result.catch(() => {}),
-  );
-
-  return result;
-};
-
-// userSessions crud
-
-const getUserSessions = async (userId: string): Promise<Array<string>> => {
-  try {
-    const filePath = path.join(
-      process.cwd(),
-      "storage",
-      "auth",
-      "userSessions",
-      `${userId}.json`,
-    );
-    const userSessions = await readFile(filePath, "utf-8");
-    return JSON.parse(userSessions);
-  } catch {
-    return [];
-  }
-};
-
-const saveUserSessions = async (
+const addToCartService = async (
   userId: string,
-  sessions: Array<string>,
-): Promise<void> => {
-  try {
-    const filePath = path.join(
-      process.cwd(),
-      "storage",
-      "auth",
-      "userSessions",
-      `${userId}.json`,
+  cartId: string,
+  productId: string,
+) => {
+  // throw new Error("test error")
+
+  let newCartItems: Array<CartItem>;
+  const cart = await getCart(userId, cartId);
+
+  if (!cart) throw new Error("Cart not found");
+
+  const { items: cartItems } = cart;
+  // update cart in db
+  const productInCart = cartItems.find((i: CartItem) => i.id === productId);
+
+  if (productInCart)
+    newCartItems = cartItems.map((p: CartItem) =>
+      p.id === productId ? { ...p, qty: p.qty + 1 } : p,
     );
-    await writeFile(filePath, JSON.stringify(sessions, null, 2));
-  } catch (err) {
-    throw err;
+  else {
+    const { id, title, price } = await fetchProductById(productId);
+    newCartItems = [...cartItems, { id, title, price, qty: 1 }];
   }
+
+  await updateCart(userId, cartId, newCartItems);
 };
 
-const addUserSessionsEntry = async (userId: string, sessionId: string) => {
-  const task = async () => {
-    try {
-      const sessions = await getUserSessions(userId);
-      const newSessions = [...sessions, sessionId];
-      await saveUserSessions(userId, newSessions);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-  return appendToUserSessionsQueue(userId, task);
+const increaseQtyService = async (
+  userId: string,
+  cartId: string,
+  productId: string,
+) => {
+  // throw new Error("test error")
+
+  let newCartItems: Array<CartItem>;
+  const cart = await getCart(userId, cartId);
+  if (!cart) throw new Error("Cart not found");
+
+  const { items: cartItems } = cart;
+  newCartItems = cartItems.map((item: CartItem) =>
+    item.id === productId ? { ...item, qty: item.qty + 1 } : item,
+  );
+  await updateCart(userId, cartId, newCartItems); // update db
 };
 
-const deleteUserSessionsEntry = async (userId: string, sessionId: string) => {
-  const task = async () => {
-    try {
-      const sessions = await getUserSessions(userId);
+const decreaseQtyService = async (
+  userId: string,
+  cartId: string,
+  productId: string,
+) => {
+  // throw new Error("test error")
 
-      // remove the sessionId
-      const updatedSessions = sessions.filter((id) => id !== sessionId);
+  let newCartItems: Array<CartItem>;
+  const cart = await getCart(userId, cartId);
+  if (!cart) throw new Error("Cart not found");
 
-      await saveUserSessions(userId, updatedSessions);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  return appendToUserSessionsQueue(userId, task);
+  const { items: cartItems } = cart;
+  newCartItems = cartItems
+    .map((item: CartItem) =>
+      item.id === productId ? { ...item, qty: item.qty - 1 } : item,
+    )
+    .filter((item: CartItem) => item.qty > 0);
+  await updateCart(userId, cartId, newCartItems);
 };
 
-// session crud
+const removeFromCartService = async (
+  userId: string,
+  cartId: string,
+  productId: string,
+) => {
+  // throw new Error("test error")
 
-const getSession = async (sessionId: string): Promise<Session | undefined> => {
-  const task = async () => {
-    try {
-      const sessionPath = path.join(
-        process.cwd(),
-        "storage",
-        "auth",
-        "sessions",
-        `${sessionId}.json`,
-      );
-      const data = await readFile(sessionPath, "utf-8");
-      return JSON.parse(data) as Session;
-    } catch {
-      return undefined;
-    }
-  };
-  return appendToSessionQueue(sessionId, task);
+  let newCartItems: Array<CartItem>;
+  const cart = await getCart(userId, cartId);
+  if (!cart) throw new Error("Cart not found");
+
+  const { items: cartItems } = cart;
+  newCartItems = cartItems.filter((i: CartItem) => i.id !== productId);
+  await updateCart(userId, cartId, newCartItems);
 };
 
-const getUserIdBySessionId = async (
-  sessionId: string,
-): Promise<string | undefined> => {
-  // that ensure last write ends before read
-  const session = await getSession(sessionId);
-  return session?.userId;
+const updateQtyService = async (
+  userId: string,
+  cartId: string,
+  productId: string,
+  qty: number,
+) => {
+  // throw new Error("test error"); // force fail for testing
+  let newCartItems: Array<CartItem>;
+  const cart = await getCart(userId, cartId);
+  if (!cart) throw new Error("Cart not found");
+
+  const { items: cartItems } = cart;
+  newCartItems = cartItems
+    .map((item: CartItem) => (item.id === productId ? { ...item, qty } : item))
+    .filter((item: CartItem) => item.qty > 0);
+  await updateCart(userId, cartId, newCartItems);
 };
 
-const saveSession = async (session: Session): Promise<string | false> => {
-  const task = async () => {
-    /* await cleanExpiredSessions(); */
-    try {
-      const sessionPath = path.join(
-        process.cwd(),
-        "storage",
-        "auth",
-        "sessions",
-        `${session.sessionId}.json`,
-      );
-      await writeFile(sessionPath, JSON.stringify(session, null, 2));
-      const added = await addUserSessionsEntry(
-        session.userId,
-        session.sessionId,
-      );
-      if (!added) {
-        await deleteFile(sessionPath);
-        return false;
-      }
-      return session.sessionId;
-    } catch {
-      return false;
-    }
-  };
-  return appendToSessionQueue(session.sessionId, task);
+export {
+  updateQtyService,
+  addToCartService,
+  decreaseQtyService,
+  increaseQtyService,
+  getValidCartByUserId,
+  removeFromCartService,
 };
-
-const deleteSession = async (sessionId: string): Promise<any> => {
-  const task = async () => {
-    try {
-      const filePath = path.join(
-        process.cwd(),
-        "storage",
-        "auth",
-        "sessions",
-        `${sessionId}.json`,
-      );
-
-      // Read file before deleting
-      const sessionData = await readFile(filePath, "utf-8");
-      const userId = JSON.parse(sessionData).userId;
-
-      // Delete file
-      const [fileDeleted, userUpdated] = await Promise.all([
-        deleteFile(filePath),
-        deleteUserSessionsEntry(userId, sessionId),
-      ]);
-
-      if (!fileDeleted || !userUpdated) {
-        throw new Error("Delete failed");
-      }
-    } catch {
-      throw new Error("Delete failed");
-    }
-  };
-
-  return appendToSessionQueue(sessionId, task);
-};
-
-export { getSession, saveSession, deleteSession, getUserIdBySessionId };
 
 ========================================
 
-FILE: features/auth/db/user.ts
+FILE: features/cart/db/cart.ts
 ----------------------------------------
 /* db access layer */
 /* idea
 
 Now (fake DB)
-storage/auth/users & emailIndex.json = source of truth
-db/user.ts = reads/writes files
+storage/cart/carts & userCartIndex = source of truth
+db/cart.ts = reads/writes files
 
 Later (real DB)
 DELETE storage/ folder
-db/user.ts → connects to real DB
+db/cart.ts → connects to real DB
 */
 
 import path from "path";
-import { mkdir } from "fs/promises";
 import { randomUUID } from "crypto";
-import { User, CreateUserData } from "../types/user";
-import { readFile, writeFile, access, unlink } from "fs/promises";
+import { Cart, CartItem } from "../types/cart";
+import { readFile, writeFile, mkdir, access, unlink } from "fs/promises";
 
 // create files
-const usersDir = path.join(process.cwd(), "storage", "auth", "users");
-await mkdir(usersDir, { recursive: true });
-const emailIndexPath = path.join(
+const cartsDir = path.join(process.cwd(), "storage", "cart", "carts");
+await mkdir(cartsDir, { recursive: true });
+const userCartIndexPath = path.join(
   process.cwd(),
   "storage",
-  "auth",
-  "emailIndex.json",
+  "cart",
+  "userCartIndex.json",
 );
 try {
-  await access(emailIndexPath);
+  await access(userCartIndexPath);
 } catch {
-  await writeFile(emailIndexPath, "{}");
+  await writeFile(userCartIndexPath, "{}");
 }
 
-// setup queues
+// avoid race conditions
+
+type UserCartIndex = Record<string, string>;
 type Task = () => Promise<any>;
-type EmailIndexType = Record<string, string>;
 
-const userQueues = new Map(); // write user
-let emailIndexQueue = Promise.resolve(); // ensures email stays unique (lock)
+const cartsQueue = new Map<string, Promise<void>>();
+let userCartIndexQueue = Promise.resolve();
 
-const appendToUserQueue = async (userId: string, task: Task) => {
-  const queue = userQueues.get(userId) || Promise.resolve();
+const appendToCartQueue = async (userId: string, task: Task) => {
+  const last = cartsQueue.get(userId) || Promise.resolve();
 
-  const result = queue.then(task);
-  userQueues.set(
+  const next = last.then(task);
+  cartsQueue.set(
     userId,
-    result.catch(() => {}),
+    next.catch(() => {}),
   );
+  return next;
+};
+
+const appendToCartIndexQueue = async (task: Task) => {
+  const result = userCartIndexQueue.then(() => task());
+  userCartIndexQueue = result.catch(() => {});
   return result;
 };
 
-const appendToEmailIndexQueue = async (task: Task) => {
-  const result = emailIndexQueue.then(() => task());
-  emailIndexQueue = result.catch(() => {});
-  return result;
-};
-
-// user crud helpers
-const testDelay = (ms: number) => new Promise((res) => setTimeout(res, ms));
-
-const getEmailIndex = async (): Promise<EmailIndexType> => {
-  try {
-    const users = await readFile(emailIndexPath, "utf-8");
-    return JSON.parse(users);
-  } catch {
-    return {} as EmailIndexType;
-  }
-};
-
-const setEmailIndex = async (id: string, email: string) => {
-  const task = async () => {
-    const data = await getEmailIndex();
-    if (data[email]) throw new Error("Email already exists");
-    await writeFile(
-      emailIndexPath,
-      JSON.stringify({ ...data, [email]: id }, null, 2),
-    );
-  };
-  return appendToEmailIndexQueue(task);
-};
-
-const deleteEmailIndex = async (email: string) => {
-  const task = async () => {
-    const data = await getEmailIndex();
-    if (!data[email]) throw new Error("Email not found");
-    delete data[email];
-    await writeFile(emailIndexPath, JSON.stringify(data, null, 2));
-  };
-  return appendToEmailIndexQueue(task);
-};
-
-const writeUser = async (user: User) => {
-  const task = async () => {
-    try {
-      const userPath = path.join(
-        process.cwd(),
-        "storage",
-        "auth",
-        "users",
-        `${user.id}.json`,
-      );
-      await writeFile(userPath, JSON.stringify(user, null, 2));
-    } catch (err) {
-      throw err;
-    }
-  };
-  return appendToUserQueue(user.id, task);
-};
-
-// user crud
-const getUserById = async (id: string): Promise<User | undefined> => {
+// helpers
+const writeCart = async (cart: Cart, useQueue: boolean = true) => {
   const task = async () => {
     const userPath = path.join(
       process.cwd(),
       "storage",
-      "auth",
-      "users",
-      `${id}.json`,
+      "cart",
+      "carts",
+      `${cart.id}.json`,
     );
+    await writeFile(userPath, JSON.stringify(cart, null, 2));
+  };
+  return useQueue ? appendToCartQueue(cart.userId, task) : task();
+};
+
+// UserCartIndex crud
+const getUserCartIndex = async (
+  useQueue: boolean = true,
+): Promise<UserCartIndex> => {
+  const task = async () => {
+    const data = await readFile(userCartIndexPath, "utf-8");
+    return JSON.parse(data) as UserCartIndex;
+  };
+  return useQueue ? appendToCartIndexQueue(task) : task();
+};
+
+const setUserCartIndex = async (
+  userId: string,
+  cartId: string,
+  useQueue: boolean = true,
+): Promise<void> => {
+  const task = async () => {
+    const index = await getUserCartIndex(false);
+    if (index[userId]) throw new Error("cart already exist");
+
+    await writeFile(
+      userCartIndexPath,
+      JSON.stringify({ ...index, [userId]: cartId }, null, 2),
+    );
+  };
+
+  return useQueue ? appendToCartIndexQueue(task) : task();
+};
+
+const deleteUserCartIndex = async (
+  userId: string,
+  useQueue: boolean = true,
+): Promise<void> => {
+  const task = async () => {
+    const index = await getUserCartIndex(false);
+    delete index[userId];
+    await writeFile(userCartIndexPath, JSON.stringify(index, null, 2));
+  };
+  return useQueue ? appendToCartIndexQueue(task) : task();
+};
+
+// cart crud
+const getCart = async (
+  userId: string,
+  cartId: string,
+  useQueue: boolean = true,
+): Promise<Cart | undefined> => {
+  // useQueue help to avoid deadlock
+
+  const task = async () => {
     try {
-      const data = await readFile(userPath, "utf-8");
-      const user = JSON.parse(data);
-      return user as User;
+      const sessionPath = path.join(
+        process.cwd(),
+        "storage",
+        "cart",
+        "carts",
+        `${cartId}.json`,
+      );
+      const data = await readFile(sessionPath, "utf-8");
+      return JSON.parse(data) as Cart;
     } catch {
       return undefined;
     }
   };
-  // return appendToUserQueue(id, task);
-  return task();
+  return useQueue ? appendToCartQueue(userId, task) : task();
 };
 
-const getUserByEmail = async (email: string): Promise<User | undefined> => {
-  // not need to be queued bcs EmailIndex already  guarantees email uniqueness
-  const emailIndex = await getEmailIndex();
-
-  const id = emailIndex[email];
-  return id ? await getUserById(id) : undefined;
-};
-
-const createUser = async (
-  userData: CreateUserData,
-): Promise<string | false> => {
-  // userData like {email, pswd, role}
-
-  const id = randomUUID();
+const getCartByUserId = async (userId: string) => {
+  const index = await getUserCartIndex();
+  const cartId = index[userId];
+  if (!cartId) return undefined;
 
   const task = async () => {
-    // await delay(10000); // 10s delay (for testing)
+    const cart = await getCart(userId, cartId, false);
+    if (!cart) {
+      await deleteUserCartIndex(userId);
+      return undefined;
+    }
+    return cart;
+  };
+  return appendToCartQueue(userId, task);
+};
+
+const createCart = async (
+  userId: string,
+  items: Array<CartItem>,
+): Promise<string> => {
+  const cartId = randomUUID();
+
+  const task = async () => {
+    const newCart = {
+      id: cartId,
+      userId,
+      items,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
     try {
-      const newUser = {
-        id,
-        ...userData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      // setEmailIndex check also email if already registered
-      await setEmailIndex(newUser.id, newUser.email);
-      await writeUser(newUser).catch(async (err) => {
-        // rollback and rethrow
-        await deleteEmailIndex(newUser.email);
+      await setUserCartIndex(newCart.userId, cartId);
+      await writeCart(newCart, false).catch(async (err) => {
+        await deleteUserCartIndex(userId);
         throw err;
       });
-
-      return newUser.id;
+      return newCart.id;
     } catch (err) {
-      throw err;
+      throw err; // don't swallow the error
     }
   };
-
-  return appendToUserQueue(id, task);
+  return appendToCartQueue(userId, task);
 };
 
-const updateUser = async (
-  id: string,
-  newData: Partial<User>,
+const touchCart = async (cart: Cart): Promise<void> => {
+  // refresh expiration time
+  const task = async () => {
+    await writeCart({ ...cart, updatedAt: new Date().toISOString() }, false);
+  };
+  return appendToCartQueue(cart.userId, task);
+};
+
+const updateCart = async (
+  userId: string,
+  cartId: string,
+  newItems: Array<CartItem>,
 ): Promise<void> => {
   const task = async () => {
-    try {
-      const user = await getUserById(id);
-      if (!user) throw new Error("user not found");
-      const updatedUser = { ...user, ...newData };
+    const cart = await getCart(userId, cartId, false);
 
-      await writeUser(updatedUser);
-    } catch (err) {
-      throw err;
-    }
-  };
-  return appendToUserQueue(id, task);
-};
-
-const deleteUser = async (id: string): Promise<void> => {
-  const userTask = async () => {
-    const userPath = path.join(
-      process.cwd(),
-      "storage",
-      "auth",
-      "users",
-      `${id}.json`,
+    if (!cart) throw new Error("Cart not found");
+    await writeCart(
+      {
+        ...cart,
+        items: newItems,
+        updatedAt: new Date().toISOString(),
+      },
+      false,
     );
-    const user = await getUserById(id);
-    if (!user) throw new Error("User not found");
-    await unlink(userPath);
-    return user.email;
   };
-
-  const email = await appendToUserQueue(id, userTask);
-
-  const emailTask = async () => {
-    const emailIndex = await getEmailIndex();
-    delete emailIndex[email];
-    await writeFile(emailIndexPath, JSON.stringify(emailIndex, null, 2));
-  };
-
-  return appendToEmailIndexQueue(emailTask);
+  return appendToCartQueue(userId, task);
 };
 
-export { createUser, updateUser, deleteUser, getUserById, getUserByEmail };
+const deleteCart = async (userId: string, cartId: string): Promise<void> => {
+  const task = async () => {
+    // check cart
+    const cart = await getCart(userId, cartId, false);
+    if (!cart) throw new Error("Cart not found");
+    // delete index
+    await deleteUserCartIndex(cart.userId);
+    // delete file
+    const cartPath = path.join(cartsDir, `${cartId}.json`);
+    await unlink(cartPath);
+  };
+  return appendToCartQueue(userId, task);
+};
+
+const getCartIdByUserId = async (userId: string): Promise<string | null> => {
+  const index = await getUserCartIndex();
+  return index[userId] ?? null;
+};
+
+export {
+  getCart,
+  touchCart,
+  createCart,
+  updateCart,
+  deleteCart,
+  getCartByUserId,
+  getCartIdByUserId,
+};
 
 ========================================
 
-FILE: features/auth/actions.ts
+FILE: features/cart/actions.ts
 ----------------------------------------
 "use server";
-
-import { redis } from "@/lib/redis";
-import { hashSessionId } from "./service";
-import { cookies, headers } from "next/headers";
-import { getCartIdByUserId } from "../cart/server";
-import { LoginData, RegisterData } from "./schema";
-import { login, logout, register } from "./service";
-import { getUserIdBySessionId } from "./db/session";
-import { registerSchema, loginSchema } from "./schema";
+import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
+import { requireUser } from "../auth/server";
+import { createCart, touchCart } from "./db/cart";
+import {
+  addToCartService,
+  decreaseQtyService,
+  increaseQtyService,
+  removeFromCartService,
+  updateQtyService,
+  getValidCartByUserId,
+} from "./service";
 
 const cookieOptions: Parameters<Awaited<ReturnType<typeof cookies>>["set"]>[2] =
   {
@@ -635,360 +431,492 @@ const cookieOptions: Parameters<Awaited<ReturnType<typeof cookies>>["set"]>[2] =
     secure: true,
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 3,
-    // maxAge: 60,
+    // maxAge: 180,
   };
 
-const loginAction = async (data: LoginData) => {
+// shared helper between actions
+const getCartContext = async () => {
+  const userId = await requireUser("/products");
+
+  // get cart by user_id
+  const userCart = await getValidCartByUserId(userId);
+
+  const cookieStore = await cookies();
+  if (!userCart) {
+    const cartId = await createCart(userId, []);
+    cookieStore.set("cart", cartId, cookieOptions);
+    return { cartId, userId };
+  }
+  await touchCart(userCart); // just update updatedAt key
+  cookieStore.set("cart", userCart.id, cookieOptions);
+  return { cartId: userCart.id, userId };
+};
+
+const addToCart = async (productId: string) => {
   try {
-    // server validation
-    const values = loginSchema.parse(data);
-    const { email, password } = values;
+    const { cartId, userId } = await getCartContext();
+    await addToCartService(userId, cartId, productId);
 
-    // rate limiter
-
-    const h = await headers();
-    const ip =
-      h.get("x-forwarded-for")?.split(",")[0] ||
-      h.get("x-real-ip") ||
-      "unknown";
-    const key = `login:${ip}:${email}`;
-
-    const attempts = await redis.incr(key);
-    if (attempts === 1) await redis.expire(key, 900); // 15 min
-    if (attempts > 5)
-      return {
-        success: false,
-        message: "Too many login attempts. Try again later.",
-        rateLimit: true,
-      };
-
-    // login
-    const { sessionId } = await login(email, password);
-    if (sessionId) {
-      const store = await cookies();
-      store.set("sessionId", sessionId, cookieOptions);
-
-      // load cart
-      const userId = await getUserIdBySessionId(hashSessionId(sessionId));
-      if (userId) {
-        const cartId = await getCartIdByUserId(userId);
-        if (cartId) {
-          store.set("cart", cartId, cookieOptions);
-        }
-      }
-      await redis.del(key);
-      return { success: true, message: "Logged in", rateLimit: false };
-    } else return { success: false, message: "Login failed", rateLimit: false };
-  } catch {
-    return { success: false, message: "Login failed", rateLimit: false };
+    // usualy isr refresh every 1h, so that is renew ui immediately
+    revalidatePath("/products", "layout");
+  } catch (err: any) {
+    if (err?.digest?.includes("NEXT_REDIRECT")) throw err; // allow redirect
+    throw new Error("Failed to add item");
   }
 };
 
-const registerAction = async (data: RegisterData) => {
+const increaseQty = async (productId: string) => {
   try {
-    const values = registerSchema.parse(data);
-    const { email, password, name } = values;
-    const { sessionId, userId } = await register(email, password, name);
-    if (sessionId && userId) {
-      const store = await cookies();
-      store.set("sessionId", sessionId, cookieOptions);
-      return { success: true, message: "Account created" };
-    }
-  } catch {}
-  return { success: false, message: "Signup failed" };
+    const { cartId, userId } = await getCartContext();
+    await increaseQtyService(userId, cartId, productId);
+
+    revalidatePath("/products", "layout");
+  } catch {
+    throw new Error("increase qty failed");
+  }
 };
 
-const logoutAction = async () => {
+const decreaseQty = async (productId: string) => {
   try {
-    const store = await cookies();
-    const sessionId = store.get("sessionId");
-    const cartCookie = store.get("cart");
+    const { cartId, userId } = await getCartContext();
+    await decreaseQtyService(userId, cartId, productId);
 
-    if (sessionId) {
-      await logout(sessionId.value); // rm from db
-      store.delete("sessionId");
-      if (cartCookie) store.delete("cart");
-      return { success: true, message: "Logged out" };
-    }
-  } catch {}
-
-  return { success: false, message: "Logout failed" };
+    revalidatePath("/products", "layout");
+  } catch {
+    throw new Error("decrease qty failed");
+  }
 };
 
-export { loginAction, registerAction, logoutAction };
+const removeFromCart = async (productId: string) => {
+  try {
+    const { cartId, userId } = await getCartContext();
+    await removeFromCartService(userId, cartId, productId);
+
+    revalidatePath("/products", "layout");
+  } catch {
+    throw new Error("remove from cart failed");
+  }
+};
+
+const updateQty = async (productId: string, qty: number) => {
+  try {
+    const { cartId, userId } = await getCartContext();
+    await updateQtyService(userId, cartId, productId, qty);
+
+    revalidatePath("/products", "layout");
+  } catch {
+    throw new Error("update qty failed");
+  }
+};
+
+export { addToCart, decreaseQty, removeFromCart, updateQty, increaseQty };
 
 ========================================
 
-FILE: features/auth/session.helpers.ts
+FILE: features/cart/queries.ts
 ----------------------------------------
-import { randomUUID } from "crypto";
-import { Session } from "./types/session";
+import { getCart } from "./db/cart";
+import { cookies } from "next/headers";
+import { CartItem } from "./types/cart";
+import { getSession } from "../auth/server";
+import { hashSessionId } from "../auth/server";
+import { isSessionValid } from "../auth/server";
 
-/* session.helpers.ts → build session object + validate
-db/session.ts         → read/write storage
-service.ts            → orchestrate (calls helpers + db)
-actions.ts            → entry point (cookies, rate limit, call service) */
+const getCartItems = async (): Promise<Array<CartItem>> => {
+  // get cookies
+  const cookieStore = await cookies();
+  const cartId = cookieStore.get("cart")?.value;
+  const sessionId = cookieStore.get("sessionId")?.value;
 
-const createSession = (userId: string) => {
-  /* this func need try catch ? hmmm
-  no i remember some one tell me before "don’t over-engineer" */
+  try {
+    if (!sessionId || !cartId) throw new Error();
 
-  // session
-  const createdAt = new Date();
-  const session = {
-    sessionId: randomUUID(),
-    userId,
-    createdAt: createdAt.toISOString(),
-    expiresAt: new Date(
-      createdAt.getTime() + 1000 * 60 * 60 * 24 * 3, // 3 days
-      // createdAt.getTime() + 1000 * 60, // 60s for test
-    ).toISOString(),
-  };
-  return session;
+    const session = await getSession(hashSessionId(sessionId));
+    if (!session) throw new Error();
+    if (!isSessionValid(session)) throw new Error();
+
+    const cart = await getCart(session.userId, cartId);
+    if (!cart) throw new Error();
+    if (session.userId != cart.userId) throw new Error();
+    return cart.items;
+  } catch {
+    return [];
+  }
 };
 
-const getUserFromSession = (session: Session) => {
-  if (!session) return null;
-  return session.userId;
-};
-
-const destroySession = () => {
-  return;
-  // delete should be in db layer only
-  // just pass it 👉 Actual delete → in actions using DB
-};
-
-const isSessionValid = (session: Session) => {
-  if (!session) return false;
-  return new Date(session.expiresAt) > new Date();
-};
-
-export { createSession, getUserFromSession, destroySession, isSessionValid };
+export { getCartItems };
 
 ========================================
 
-FILE: features/auth/components/AuthForm.client.tsx
+FILE: features/cart/components/CartTable.client.tsx
 ----------------------------------------
 "use client";
-
-import Link from "next/link";
 import { toast } from "sonner";
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { CartItem } from "../types/cart";
 import { Input } from "@/components/ui/input";
-import { AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { loginSchema, LoginData } from "../schema";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { loginAction, registerAction } from "../actions";
-import { registerSchema, RegisterData } from "../schema";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Form, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { increaseQty, decreaseQty } from "../actions";
+import { removeFromCart, updateQty } from "../actions";
+import { Plus, Minus, MoreHorizontalIcon } from "lucide-react";
+import { Table, TableBody, TableCell } from "@/components/ui/table";
+import { DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenuContent } from "@/components/ui/dropdown-menu";
+import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useEffect, useOptimistic, useState, useTransition } from "react";
+import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
-type Props = { type: "login" | "register" };
+// cartDialog dropdown actions
 
-const AuthForm = ({ type }: Props) => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const isLogin = type === "login";
+type ClientUpdateQtyProps = {
+  productId: string;
+  qty: number;
+  onUpdate: (qty: number) => void;
+  onRevert: () => void;
+};
 
-  const config = {
-    // resolver
-    resolver: zodResolver(isLogin ? loginSchema : registerSchema),
-    // defaultValues
-    defaultValues: isLogin
-      ? { email: "", password: "" }
-      : { name: "", email: "", password: "", confirmPassword: "" },
-    // mode
-    mode: "onChange" as const,
-  };
-  const form = useForm<LoginData | RegisterData>(config);
+const ClientUpdateQty = ({
+  productId,
+  qty,
+  onUpdate,
+  onRevert,
+}: ClientUpdateQtyProps) => {
+  // qty prop: is always the last server value
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newQty, setNewQty] = useState(qty);
 
-  const onSubmit = async (values: LoginData | RegisterData) => {
-    const options = { position: "top-center" } as const;
+  useEffect(() => {
+    setNewQty(qty); // update qty in ui if the inc/dec triggered
+  }, [qty]);
 
-    try {
-      setIsSubmitting(true);
-      let resolved = false;
-      if (isLogin) {
-        const { success, rateLimit, message } = await loginAction(
-          values as LoginData,
-        );
-        if (success) resolved = true;
-        if (rateLimit) {
-          toast.error(message, options);
-          return; // stop here
-        }
-        success
-          ? toast.success(message, options)
-          : toast.error(message, options);
-      } else {
-        const { success, message } = await registerAction(
-          values as RegisterData,
-        );
-        if (success) resolved = true;
-        success
-          ? toast.success(message, options)
-          : toast.error(message, options);
-      }
+  const handleUpdateQty = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number(e.target.value);
 
-      if (resolved) {
-        const safeRedirects = ["/products"];
-        const redirectTo = searchParams.get("redirect");
+    setNewQty(value);
+    onUpdate(value);
 
-        router.replace(
-          redirectTo && safeRedirects.includes(redirectTo) ? redirectTo : "/",
-        );
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
+    const id = toast.loading("Saving ...", {
+      position: "top-center",
+    });
+
+    const options = {
+      id,
+      position: "top-center",
+    } as const;
+
+    await updateQty(productId, value)
+      .then(() => toast.success("Quantity updated", options))
+      .catch(() => {
+        toast.error("Update failed", options);
+        setNewQty(qty);
+        onRevert(); // tell parent to revert
+      });
   };
 
   return (
-    <Card className="max-w-sm mx-auto ">
-      <CardHeader>
-        <CardTitle>{isLogin ? "Login" : "Create account"}</CardTitle>
-      </CardHeader>
-
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={isLogin ? "login" : "register"}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="space-y-4"
-              >
-                {!isLogin && (
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Input placeholder="Name" {...field} />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Input type="email" placeholder="Email" {...field} />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Input
-                        type="password"
-                        placeholder="Password"
-                        {...field}
-                      />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {!isLogin && (
-                  <FormField
-                    control={form.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Input
-                          type="password"
-                          placeholder="Confirm Password"
-                          {...field}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
-            <Button className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <Loader2 className="animate-spin" />
-              ) : isLogin ? (
-                "Sign in"
-              ) : (
-                "Sign up"
-              )}
-            </Button>
-
-            <p className="text-sm text-center text-muted-foreground">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-              <Link
-                href={{
-                  pathname: isLogin ? "/register" : "/login",
-                  query: Object.fromEntries(searchParams),
-                }}
-                className="font-medium text-primary hover:underline"
-              >
-                {isLogin ? "Sign up" : "Sign in"}
-              </Link>
-            </p>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+    <TableCell>
+      <Input
+        type="number"
+        value={newQty}
+        onBlur={handleUpdateQty}
+        onChange={(e) => setNewQty(Number(e.target.value))}
+      />
+    </TableCell>
   );
 };
 
-export { AuthForm };
+// rule: use optimistic just when value comes from server props
+
+const ClientCartTable = ({ cart }: { cart: Array<CartItem> }) => {
+  const [optimisticCart, setOptimisticCart] = useOptimistic(cart);
+  const [, startTransition] = useTransition();
+
+  // event handlers
+
+  const handleIncrease = (productId: string) => {
+    startTransition(async () => {
+      // update ui immediately with fake data
+      setOptimisticCart((state) =>
+        state.map((p) => (p.id === productId ? { ...p, qty: p.qty + 1 } : p)),
+      );
+
+      const id = toast.loading("Updating ...", {
+        position: "top-center",
+        duration: 300,
+      });
+
+      const options = {
+        id,
+        position: "top-center",
+        duration: 300,
+      } as const;
+
+      await increaseQty(productId)
+        .then(() => toast.success("+1 added", options))
+        .catch(() => {
+          toast.error("Couldn't increase", options);
+          throw new Error(); // let React revert optimistic state
+        });
+    });
+  };
+
+  const handleDecrease = (productId: string) => {
+    startTransition(async () => {
+      setOptimisticCart((state) =>
+        state.map((p) => (p.id === productId ? { ...p, qty: p.qty - 1 } : p)),
+      );
+
+      const id = toast.loading("Updating ...", {
+        position: "top-center",
+        duration: 300,
+      });
+
+      const options = {
+        id,
+        position: "top-center",
+        duration: 300,
+      } as const;
+
+      await decreaseQty(productId)
+        .then(() => toast.success("-1 removed", options))
+        .catch(() => {
+          toast.error("Couldn't decrease", options);
+          throw new Error();
+        });
+    });
+  };
+
+  const handleRemove = (productId: string) => {
+    startTransition(async () => {
+      setOptimisticCart((state) =>
+        state.filter((item) => item.id !== productId),
+      );
+
+      const id = toast.loading("Removing ...", {
+        position: "top-center",
+        duration: 300,
+      });
+
+      const options = {
+        id,
+        position: "top-center",
+        duration: 300,
+      } as const;
+
+      await removeFromCart(productId)
+        .then(() => toast.success("Item removed", options))
+        .catch(() => {
+          toast.error("Couldn't remove item", options);
+          throw new Error();
+        });
+    });
+  };
+
+  const handleUpdateQty = (productId: string, qty: number) => {
+    startTransition(async () => {
+      setOptimisticCart((state) =>
+        qty <= 0
+          ? state.filter((p) => p.id !== productId)
+          : state.map((p) => (p.id === productId ? { ...p, qty } : p)),
+      );
+    });
+  };
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Product</TableHead>
+          <TableHead>Price</TableHead>
+          <TableHead>Quantity</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+
+      <TableBody>
+        {optimisticCart.map((item: CartItem) => (
+          <TableRow key={item.id}>
+            <TableCell className="font-medium text-purple-400">
+              {item.title}
+            </TableCell>
+
+            <TableCell>{item.price}</TableCell>
+
+            <ClientUpdateQty
+              productId={item.id}
+              qty={item.qty}
+              onUpdate={(qty) => handleUpdateQty(item.id, qty)}
+              onRevert={() => {
+                startTransition(async () => {
+                  setOptimisticCart((state) =>
+                    state.map((p) =>
+                      p.id === item.id ? { ...p, qty: item.qty } : p,
+                    ),
+                  );
+                });
+              }} // revert to original
+            />
+
+            <TableCell className="text-right">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="size-8">
+                    <MoreHorizontalIcon />
+                    <span className="sr-only">Open menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent align="end">
+                  {/* inc */}
+                  <DropdownMenuItem onClick={() => handleIncrease(item.id)}>
+                    <Plus className="mr-2" />
+                    inc
+                  </DropdownMenuItem>
+
+                  {/* dec */}
+                  <DropdownMenuItem onClick={() => handleDecrease(item.id)}>
+                    <Minus className="mr-2" />
+                    dec
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  {/* rm */}
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => handleRemove(item.id)}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+};
+
+export { ClientCartTable };
 
 ========================================
 
-FILE: features/auth/schema.ts
+FILE: features/cart/components/AddToCartButton.client.tsx
 ----------------------------------------
-import { z } from "zod";
+"use client";
+import { toast } from "sonner";
+import { useState } from "react";
+import { addToCart } from "../actions";
+import { Button } from "@/components/ui/button";
 
-const loginSchema = z.object({
-  email: z.string().email("invalid email").trim().toLowerCase(),
-  password: z.string().min(8).trim(),
-});
-const registerSchema = z
-  .object({
-    name: z.string().min(5),
-    email: z.string().email("invalid email").trim().toLowerCase(),
-    password: z.string().min(8).trim(),
-    confirmPassword: z.string().min(8).trim(),
-  })
-  .refine((obj) => obj.password === obj.confirmPassword, {
-    message: "Passwords must match",
-    path: ["confirmPassword"],
-  });
-type LoginData = z.infer<typeof loginSchema>;
-type RegisterData = z.infer<typeof registerSchema>;
+// client actions > add toast
 
-export { loginSchema, registerSchema };
-export type { LoginData, RegisterData };
+type ClientAddToCartProps = { productId: string };
+
+const ClientAddToCart = ({ productId }: ClientAddToCartProps) => {
+  const [onAction, setOnAction] = useState(false);
+
+  const handleAdd = async () => {
+    setOnAction(true);
+
+    const id = toast.loading("Adding to cart ...", {
+      position: "top-center",
+    });
+
+    const options = {
+      id,
+      position: "top-center",
+    } as const;
+
+    await addToCart(productId)
+      .then(() => toast.success("Added to cart", options))
+      .catch((err: any) => {
+        if (err?.digest?.includes("NEXT_REDIRECT")) {
+          toast.warning("Please login first", options);
+        } else {
+          toast.error("Failed to add item", options);
+        }
+      })
+      .finally(() => setOnAction(false));
+  };
+
+  return (
+    <Button
+      type="button"
+      variant={onAction ? "default" : "destructive"}
+      disabled={onAction}
+      onClick={handleAdd}
+      className="opacity-70 hover:scale-[1.02] transition-transform duration-300"
+    >
+      add to cart
+    </Button>
+  );
+};
+
+export { ClientAddToCart };
 
 ========================================
 
-FILE: features/auth/index.ts
+FILE: features/cart/components/CartDialog.client.tsx
+----------------------------------------
+"use client";
+import Image from "next/image";
+import { CartItem } from "../types/cart";
+import { Button } from "@/components/ui/button";
+import { ClientCartTable } from "./CartTable.client";
+import { Dialog, DialogTitle } from "@/components/ui/dialog";
+import { DialogHeader, DialogTrigger } from "@/components/ui/dialog";
+import { DialogContent, DialogDescription } from "@/components/ui/dialog";
+
+const CartDialog = ({ cartItems }: { cartItems: Array<CartItem> }) => {
+  // console.log(JSON.stringify(cart))
+  return (
+    /* cart dialog */
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          aria-label="Open cart"
+          variant="ghost"
+          size="icon-lg"
+          className="p-1 fixed right-4 top-16 bg-white shadow-md rounded-full border border-gray-100 hover:shadow-lg transition-shadow duration-300"
+        >
+          <Image
+            src="https://img.icons8.com/?size=100&id=8384&format=png&color=000000"
+            alt="basket"
+            width={40}
+            height={40}
+          />
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent className="flex flex-col max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold text-gray-900">
+            Your Cart
+          </DialogTitle>
+          <DialogDescription className="text-gray-500 text-sm">
+            Easily manage your cart.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="overflow-y-auto flex-1">
+          <ClientCartTable cart={cartItems} />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export { CartDialog };
+
+========================================
+
+FILE: features/cart/index.ts
 ----------------------------------------
 // export client comps
-export { AuthForm } from "./components/AuthForm.client";
+export { CartDialog } from "./components/CartDialog.client";
+export { ClientAddToCart } from "./components/AddToCartButton.client";
 
 ========================================
 

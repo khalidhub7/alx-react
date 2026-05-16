@@ -32,16 +32,16 @@ touch storage/cart/carts.json
 
 # dump a dir
 
-find features/auth -type f | while read file; do
-  {
+{
+  find features/cart -type f | while read file; do
     echo "FILE: $file"
     echo "----------------------------------------"
     cat "$file"
     echo
     echo "========================================"
     echo
-  } >> ../dump.txt
-done
+  done
+} > ../dump.txt
 
 # reset storage
 find storage -type f \
