@@ -1,0 +1,141 @@
+]633;E;find features/products -type f;d770adf6-88cd-462c-93f1-e2a7333d87f9]633;CFILE: features/products/components/ProductCard.tsx
+----------------------------------------
+import Link from "next/link";
+import Image from "next/image";
+import { Product } from "../types/product";
+import { Button } from "@/components/ui/button";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+
+interface ProductCardProps {
+  p: Product;
+}
+
+const ProductCard = ({ p }: ProductCardProps) => {
+  return (
+    <li className="border border-gray-100 rounded-2xl shadow-sm bg-white flex flex-col w-full overflow-hidden hover:shadow-md transition-shadow duration-300">
+      <article className="flex flex-col gap-4">
+        {/* Image */}
+        <div className="w-full">
+          <AspectRatio ratio={16 / 12}>
+            <Image
+              src={p.thumbnail}
+              alt={p.title}
+              fill
+              className="object-cover"
+              /* If screen ≤ 768px → image is 100vw (full width) */
+              sizes="(max-width: 768px) 100vw, 300px"
+            />
+          </AspectRatio>
+        </div>
+
+        {/* Info */}
+        <div className="flex flex-col gap-4 px-4 pb-4">
+          <div className="flex items-start justify-between gap-2">
+            <h2 className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">
+              {p.title}
+            </h2>
+            <span className="text-sm font-bold text-emerald-600 whitespace-nowrap">
+              ${p.price}
+            </span>
+          </div>
+
+          <div className="flex justify-end">
+            <Button
+              asChild
+              size="sm"
+              variant="destructive"
+              className="rounded-full px-5 text-xs font-semibold"
+            >
+              <Link href={`/products/${p.id}`}>Details</Link>
+            </Button>
+          </div>
+        </div>
+      </article>
+    </li>
+  );
+};
+
+export { ProductCard };
+
+========================================
+
+FILE: features/products/server.ts
+----------------------------------------
+// export server comps
+export type { Product } from "./types/product";
+export { ProductCard } from "./components/ProductCard";
+export { fetchProducts, fetchProductById } from "./db/product";
+
+========================================
+
+FILE: features/products/types/product.ts
+----------------------------------------
+interface Product {
+  id: string;
+  title: string;
+  stock: number;
+  brand: string;
+  price: number;
+  rating: number;
+  category: string;
+  thumbnail: string;
+  description: string;
+  images: Array<string>;
+  discountPercentage: number;
+}
+
+export type { Product };
+
+========================================
+
+FILE: features/products/db/product.ts
+----------------------------------------
+import { Product } from "../types/product";
+import { notFound } from "next/navigation";
+
+// hint: Uses parallel fetch if more than one dataset
+
+const fetchProducts = async () => {
+  // add n to make it realistic
+  const start = 80;
+  const n = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
+  const url = `https://dummyjson.com/products?limit=${n}&skip=${start}`;
+  const products = await fetch(url)
+    .then((res) => {
+      if (!res.ok) throw new Error("HTTP error");
+      return res.json() as Promise<{ products: Product[] }>;
+    })
+    .catch(() => ({ products: [] }));
+
+  // always differentiate HTTP errors from network errors
+
+  return products;
+};
+
+const fetchProductById = async (id: string) => {
+  let res: Response;
+
+  try {
+    const url = `https://dummyjson.com/products/${id}`;
+    // console.log(params instanceof Promise) // true
+    res = await fetch(url);
+  } catch (_) {
+    throw new Error("Network / runtime error");
+  }
+
+  if (!res.ok) notFound();
+
+  const product = (await res.json()) as Product;
+  return product;
+};
+
+export { fetchProductById, fetchProducts };
+
+========================================
+
+FILE: features/products/index.ts
+----------------------------------------
+// export client comps
+
+========================================
+
