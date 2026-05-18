@@ -33,7 +33,7 @@ touch storage/cart/carts.json
 # dump a dir
 
 {
-  find features/products -type f | while read file; do
+  find features/auth -type f | while read file; do
     echo "FILE: $file"
     echo "----------------------------------------"
     cat "$file"
