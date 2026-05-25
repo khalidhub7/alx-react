@@ -33,7 +33,7 @@ touch storage/cart/carts.json
 # dump a dir
 
 {
-  find features/cart -type f | while read file; do
+  find features/auth -type f | while read file; do
     echo "FILE: $file"
     echo "----------------------------------------"
     cat "$file"
@@ -52,4 +52,4 @@ echo "{}" > storage/auth/emailIndex.json && \
 echo "{}" > storage/cart/userCartIndex.json
 
 # make files untracked by git
-git rm --cached ../dump.txt ../read.sh
+git rm --cached dump.rdb ../dump.txt
