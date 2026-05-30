@@ -3,6 +3,8 @@ npx create-next-app@latest app-basics
 
 # formatter
 prettier --write --print-width 80 file
+# linter
+npm run lint -- --fix app/\(auth\)/login/page.tsx
 
 # save project structure
 tree ../app-basics/ -I 'node_modules/' > docs/structure.txt
@@ -33,7 +35,7 @@ touch storage/cart/carts.json
 # dump a dir
 
 {
-  find features/auth -type f | while read file; do
+  find app -type f | while read file; do
     echo "FILE: $file"
     echo "----------------------------------------"
     cat "$file"
@@ -53,3 +55,6 @@ echo "{}" > storage/cart/userCartIndex.json
 
 # make files untracked by git
 git rm --cached dump.rdb ../dump.txt
+
+# lint
+npm run lint -- --fix app/\(auth\)/login/page.tsx

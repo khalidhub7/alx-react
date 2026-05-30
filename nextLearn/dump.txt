@@ -1,1022 +1,656 @@
-]633;E;find features/auth -type f;db064ef9-f0bc-4a3b-88f6-4efb421f42a4]633;CFILE: features/auth/index.ts
+]633;E;find app -type f;d245963f-63e9-47bf-9016-bf9616a39643]633;CFILE: app/(public)/about/page.tsx
 ----------------------------------------
-// export client comps
-export { AuthForm } from "./components/AuthForm.client";
+const About = () => (
+  <section className="max-w-2xl mx-auto mt-16 px-6 py-12 rounded-2xl border border-gray-100 shadow-sm text-center flex flex-col gap-6 bg-white">
+    <header className="flex flex-col gap-2">
+      <span className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
+        Who we are
+      </span>
+      <h1 className="text-3xl font-bold text-gray-900">About Us</h1>
+    </header>
 
-========================================
-
-FILE: features/auth/types/user.ts
-----------------------------------------
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  password: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface CreateUserData {
-  name: string;
-  email: string;
-  password: string;
-}
-
-export type { User, CreateUserData };
-
-========================================
-
-FILE: features/auth/types/session.ts
-----------------------------------------
-interface Session {
-  userId: string;
-  revoked?: boolean;
-  sessionId: string;
-  createdAt: string;
-  expiresAt: string;
-}
-
-export type { Session };
-
-========================================
-
-FILE: features/auth/service.ts
-----------------------------------------
-// helpers (business logic)
-
-import bcrypt from "bcrypt";
-import crypto from "node:crypto";
-import { createSession } from "./session.helpers";
-import { getUserByEmail, createUser } from "./db/user";
-import { saveSession, deleteSession } from "./db/session";
-
-// helpers
-const comparePassword = async (
-  plainPwd: string,
-  hashedPwd: string,
-): Promise<boolean> => {
-  return await bcrypt.compare(plainPwd, hashedPwd);
-};
-const hashPassword = async (password: string) => {
-  return await bcrypt.hash(password, 12);
-};
-const hashSessionId = (sessionId: string) => {
-  return crypto.createHash("sha256").update(sessionId).digest("hex");
-};
-
-// get user > check password > create session > return sessionId
-const login = async (email: string, password: string) => {
-  const user = await getUserByEmail(email);
-
-  if (!user) throw new Error("user not found");
-  if (!(await comparePassword(password, user.password))) {
-    throw new Error("invalid credentials");
-  }
-
-  // create session
-  const session = createSession(user.id);
-  await saveSession({
-    ...session,
-    sessionId: hashSessionId(session.sessionId),
-  });
-  return { sessionId: session.sessionId };
-};
-
-// check if user exists > hash password > create user > return userId
-const register = async (email: string, password: string, name: string) => {
-  // check if email already exist
-  const anyUser = await getUserByEmail(email);
-  if (anyUser)
-    throw new Error(
-      "Unable to create account. Try logging in if you already registered.",
-    );
-
-  const hashedPassword = await hashPassword(password);
-  const userData = { email, password: hashedPassword, name };
-
-  const userId = await createUser(userData);
-  if (!userId) throw new Error("Failed to create user");
-
-  // create session
-  const session = createSession(userId);
-  await saveSession({
-    ...session,
-    sessionId: hashSessionId(session.sessionId),
-  });
-  return { sessionId: session.sessionId, userId };
-};
-
-const logout = async (sessionId: string) => {
-  if (!sessionId) return;
-  // hmm cookie also should removed
-  await deleteSession(hashSessionId(sessionId)); // from db
-};
-
-export { login, register, logout, hashSessionId };
-
-========================================
-
-FILE: features/auth/db/user.ts
-----------------------------------------
-/* db access layer */
-/* idea
-
-Now (fake DB)
-storage/auth/users & emailIndex.json = source of truth
-db/user.ts = reads/writes files
-
-Later (real DB)
-DELETE storage/ folder
-db/user.ts → connects to real DB
-*/
-
-import path from "path";
-import { mkdir } from "fs/promises";
-import { randomUUID } from "crypto";
-import { User, CreateUserData } from "../types/user";
-import { readFile, writeFile, unlink } from "fs/promises";
-
-// assume that Filesystem operations are always success
-
-// create files
-const usersDir = path.join(process.cwd(), "storage", "auth", "users");
-await mkdir(usersDir, { recursive: true });
-const emailIndexPath = path.join(
-  process.cwd(),
-  "storage",
-  "auth",
-  "emailIndex.json",
+    <p className="text-gray-500 text-base leading-relaxed">
+      We are an online store that sells high-quality electronic products like
+      phones, laptops, accessories, and smart devices. Our goal is to offer
+      reliable products at fair prices with fast delivery and friendly support.
+      We focus on quality, simplicity, and customer satisfaction.
+    </p>
+  </section>
 );
-await writeFile(emailIndexPath, "{}", { flag: "wx" }).catch(() => {});
 
-// helpers
-// const testDelay = (ms: number) => new Promise((res) => setTimeout(res, ms));
-
-// setup queues
-type Task<T = any> = () => Promise<T>;
-type EmailIndexType = Record<string, string>;
-
-// one queue per userId to run tasks one at a time, in order
-const userQueues = new Map<string, Promise<void>>();
-// global lock to run email tasks one at a time, in order
-let emailIndexQueue: Promise<any> = Promise.resolve();
-
-const appendToUserQueue = async (userId: string, task: Task) => {
-  const queue = userQueues.get(userId) || Promise.resolve();
-  const result = queue.then(task);
-  const safeResult = result.catch(() => {});
-
-  userQueues.set(userId, safeResult);
-  safeResult.finally(() => {
-    if (userQueues.get(userId) === safeResult) userQueues.delete(userId);
-  });
-  return result;
-};
-
-const appendToEmailIndexQueue = async (task: Task) => {
-  const result = emailIndexQueue.then(() => task());
-  emailIndexQueue = result.catch(() => {});
-  return result;
-};
-
-// email index crud helpers
-
-const getEmailIndex = async (
-  useQueue: boolean = true,
-): Promise<EmailIndexType> => {
-  const task = async () => {
-    try {
-      const users = await readFile(emailIndexPath, "utf-8");
-      return JSON.parse(users);
-    } catch {
-      return {};
-    }
-  };
-  return useQueue ? appendToEmailIndexQueue(task) : task();
-};
-
-const setEmailIndex = async (
-  id: string,
-  email: string,
-  useQueue: boolean = true,
-) => {
-  const task = async () => {
-    const data = await getEmailIndex(false);
-    if (data[email])
-      throw new Error(
-        "Unable to create account. Try logging in if you already registered.",
-      );
-    await writeFile(emailIndexPath, JSON.stringify({ ...data, [email]: id }));
-  };
-  return useQueue ? appendToEmailIndexQueue(task) : task();
-};
-
-const deleteEmailIndex = async (email: string, useQueue: boolean = true) => {
-  const task = async () => {
-    try {
-      const data = await getEmailIndex(false);
-      if (!data[email]) throw new Error("Email not found");
-      delete data[email];
-      await writeFile(emailIndexPath, JSON.stringify(data, null, 2));
-    } catch {
-      throw new Error("Failed to delete email index");
-    }
-  };
-  return useQueue ? appendToEmailIndexQueue(task) : task();
-};
-
-// user crud
-const writeUser = async (user: User, useQueue: boolean = true) => {
-  const task = async () => {
-    try {
-      const userPath = path.join(
-        process.cwd(),
-        "storage",
-        "auth",
-        "users",
-        `${user.id}.json`,
-      );
-      await writeFile(userPath, JSON.stringify(user, null, 2));
-    } catch {
-      throw new Error("Failed to write user");
-    }
-  };
-  return useQueue ? appendToUserQueue(user.id, task) : task();
-};
-
-// user crud
-const getUserById = async (
-  id: string,
-  useQueue: boolean = true,
-): Promise<User | undefined> => {
-  const task = async () => {
-    try {
-      if (!id) throw new Error();
-      const userPath = path.join(
-        process.cwd(),
-        "storage",
-        "auth",
-        "users",
-        `${id}.json`,
-      );
-      const data = await readFile(userPath, "utf-8");
-      const user = JSON.parse(data);
-      return user as User;
-    } catch {
-      return undefined;
-    }
-  };
-  return useQueue ? appendToUserQueue(id, task) : task();
-};
-
-const getUserByEmail = async (email: string): Promise<User | undefined> => {
-  const emailIndex = await getEmailIndex();
-  const id = emailIndex[email];
-  return await getUserById(id);
-};
-
-const createUser = async (
-  userData: CreateUserData,
-  useQueue: boolean = true,
-): Promise<string> => {
-  // userData like {email, password, role}
-
-  const id = randomUUID();
-  const task = async () => {
-    // await delay(10000); // 10s delay (for testing)
-    const newUser = {
-      id,
-      ...userData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    // setEmailIndex throw email if already registered
-    await setEmailIndex(newUser.id, newUser.email);
-    await writeUser(newUser, false);
-    return newUser.id;
-  };
-  return useQueue ? appendToUserQueue(id, task) : task();
-};
-
-const updateUser = async (
-  id: string,
-  newData: Partial<User>,
-  useQueue: boolean = true,
-): Promise<void> => {
-  const task = async () => {
-    const user = await getUserById(id, false);
-    if (!user) throw new Error("user not found");
-
-    const updatedUser = {
-      ...user,
-      ...newData,
-      updatedAt: new Date().toISOString(),
-    };
-
-    // email changed need to change index
-    const newEmail = newData.email;
-    if (newEmail && newEmail !== user.email) {
-      const emailIndexTask = async () => {
-        await deleteEmailIndex(user.email, false); // delete old email
-        await setEmailIndex(id, newEmail, false); // set new email
-      };
-      await appendToEmailIndexQueue(emailIndexTask);
-    }
-    await writeUser(updatedUser, false);
-  };
-
-  return useQueue ? appendToUserQueue(id, task) : task();
-};
-
-const deleteUser = async (
-  id: string,
-  useQueue: boolean = true,
-): Promise<void> => {
-  const task = async () => {
-    // check user
-    const userPath = path.join(
-      process.cwd(),
-      "storage",
-      "auth",
-      "users",
-      `${id}.json`,
-    );
-    const user = await getUserById(id, false);
-    if (!user) throw new Error("user not found");
-
-    await deleteEmailIndex(user.email); // remove index
-    await unlink(userPath); // remove user
-  };
-  return useQueue ? appendToUserQueue(id, task) : task();
-};
-
-export { createUser, updateUser, deleteUser, getUserById, getUserByEmail };
+export default About;
 
 ========================================
 
-FILE: features/auth/db/session.ts
+FILE: app/(public)/page.tsx
 ----------------------------------------
-/* db access layer */
-/* idea
-
-Now (fake DB)
-storage/auth/sessions & userSessions = source of truth
-db/session.ts = reads/writes files
-
-Later (real DB)
-DELETE storage/ folder
-db/session.ts → connects to real DB
-*/
-// assume that Filesystem operations are always success
-
-import path from "path";
-import { Session } from "../types/session";
-import { readFile, writeFile, mkdir, unlink } from "fs/promises";
-
-// helpers
-
-// create files
-const sessionsDir = path.join(process.cwd(), "storage", "auth", "sessions");
-const userSessionsDir = path.join(
-  process.cwd(),
-  "storage",
-  "auth",
-  "userSessions",
-);
-await mkdir(sessionsDir, { recursive: true });
-await mkdir(userSessionsDir, { recursive: true });
-
-// types
-type Task = () => Promise<any>;
-
-// setup queues
-const sessionQueues = new Map(); // one queue per sessionId to serialize access
-const userSessionsQueue = new Map(); // one queue per userId to serialize access
-
-const appendToSessionQueue = async (sessionId: string, task: Task) => {
-  const queue = sessionQueues.get(sessionId) || Promise.resolve();
-
-  const result = queue.then(task);
-  const safeResult = result.catch(() => {});
-
-  sessionQueues.set(sessionId, safeResult);
-  safeResult.finally(() => {
-    if (sessionQueues.get(sessionId) === safeResult)
-      sessionQueues.delete(sessionId);
-  });
-  return result;
-};
-
-const appendToUserSessionsQueue = async (userId: string, task: Task) => {
-  const queue = userSessionsQueue.get(userId) || Promise.resolve();
-
-  const result = queue.then(task);
-  const safeResult = result.catch(() => {});
-
-  userSessionsQueue.set(userId, safeResult);
-  safeResult.finally(() => {
-    if (userSessionsQueue.get(userId) === safeResult)
-      userSessionsQueue.delete(userId);
-  });
-  return result;
-};
-
-// userSessions crud
-const getUserSessions = async (
-  userId: string,
-  useQueue: boolean = true,
-): Promise<Array<string>> => {
-  const task = async () => {
-    try {
-      const filePath = path.join(
-        process.cwd(),
-        "storage",
-        "auth",
-        "userSessions",
-        `${userId}.json`,
-      );
-      const userSessions = await readFile(filePath, "utf-8");
-      return JSON.parse(userSessions);
-    } catch {
-      return [];
-    }
-  };
-  return useQueue ? appendToUserSessionsQueue(userId, task) : task();
-};
-
-const saveUserSessions = async (
-  userId: string,
-  sessions: Array<string>,
-  useQueue: boolean = true,
-): Promise<void> => {
-  const task = async () => {
-    try {
-      const filePath = path.join(
-        process.cwd(),
-        "storage",
-        "auth",
-        "userSessions",
-        `${userId}.json`,
-      );
-      await writeFile(filePath, JSON.stringify(sessions, null, 2));
-    } catch {
-      throw new Error("Failed to save userSessions");
-    }
-  };
-  return useQueue ? appendToUserSessionsQueue(userId, task) : task();
-};
-
-const addUserSessionsEntry = async (
-  userId: string,
-  sessionId: string,
-  useQueue: boolean = true,
-) => {
-  const task = async () => {
-    try {
-      const sessions = await getUserSessions(userId, false);
-      const newSessions = [...sessions, sessionId];
-      await saveUserSessions(userId, newSessions, false);
-    } catch {
-      throw new Error("Failed to add userSessions entry");
-    }
-  };
-  return useQueue ? appendToUserSessionsQueue(userId, task) : task();
-};
-
-const deleteUserSessionsEntry = async (
-  userId: string,
-  sessionId: string,
-  useQueue: boolean = true,
-) => {
-  const task = async () => {
-    try {
-      const sessions = await getUserSessions(userId, false);
-      const updatedSessions = sessions.filter((id) => id !== sessionId);
-      await saveUserSessions(userId, updatedSessions, false);
-    } catch {
-      throw new Error("Failed to delete userSessions entry");
-    }
-  };
-  return useQueue ? appendToUserSessionsQueue(userId, task) : task();
-};
-
-// session crud
-
-const getSession = async (
-  sessionId: string,
-  useQueue: boolean = true,
-): Promise<Session | undefined> => {
-  const task = async () => {
-    try {
-      const sessionPath = path.join(
-        process.cwd(),
-        "storage",
-        "auth",
-        "sessions",
-        `${sessionId}.json`,
-      );
-      const data = await readFile(sessionPath, "utf-8");
-      return JSON.parse(data) as Session;
-    } catch {
-      return undefined;
-    }
-  };
-  return useQueue ? appendToSessionQueue(sessionId, task) : task();
-};
-
-const getUserIdBySessionId = async (
-  sessionId: string,
-  useQueue: boolean = true,
-): Promise<string | undefined> => {
-  const session = await getSession(sessionId, useQueue);
-  return session?.userId;
-};
-
-const saveSession = async (
-  session: Session,
-  useQueue: boolean = true,
-): Promise<string | false> => {
-  const task = async () => {
-    try {
-      const sessionPath = path.join(
-        process.cwd(),
-        "storage",
-        "auth",
-        "sessions",
-        `${session.sessionId}.json`,
-      );
-      await writeFile(sessionPath, JSON.stringify(session, null, 2));
-      await addUserSessionsEntry(session.userId, session.sessionId);
-      return session.sessionId;
-    } catch {
-      throw new Error("Failed to save session");
-    }
-  };
-  return useQueue ? appendToSessionQueue(session.sessionId, task) : task();
-};
-
-const deleteSession = async (
-  sessionId: string,
-  useQueue: boolean = true,
-): Promise<any> => {
-  const task = async () => {
-    const filePath = path.join(
-      process.cwd(),
-      "storage",
-      "auth",
-      "sessions",
-      `${sessionId}.json`,
-    );
-    const userId = await getUserIdBySessionId(sessionId, false);
-    // Logout/delete should succeed even if already deleted.
-    if (!userId) return;
-
-    // Delete file
-    await unlink(filePath);
-    await deleteUserSessionsEntry(userId, sessionId);
-  };
-  return useQueue ? appendToSessionQueue(sessionId, task) : task();
-};
-
-export { getSession, saveSession, deleteSession, getUserIdBySessionId };
-
-========================================
-
-FILE: features/auth/components/AuthForm.client.tsx
-----------------------------------------
-"use client";
-
 import Link from "next/link";
-import { toast } from "sonner";
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { Input } from "@/components/ui/input";
-import { AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { loginSchema, LoginData } from "../schema";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { loginAction, registerAction } from "../actions";
-import { registerSchema, RegisterData } from "../schema";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Form, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-type Props = { type: "login" | "register" };
+const Home = () => (
+  <section className="max-w-2xl mx-auto mt-24 px-8 py-16 rounded-2xl text-center flex flex-col items-center gap-8">
+    <h1 className="text-5xl font-bold tracking-tight text-gray-900 hover:scale-105 transition-transform duration-300">
+      GlowEssence
+    </h1>
 
-const AuthForm = ({ type }: Props) => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const isLogin = type === "login";
+    <p className="text-gray-500 text-lg leading-relaxed">
+      Elevate your beauty routine with everyday makeup essentials. From bold
+      lipsticks to smooth mascaras and versatile palettes, our products are
+      designed for quality, style, and confidence—at prices that fit your
+      routine.
+    </p>
 
-  const config = {
-    // resolver
-    resolver: zodResolver(isLogin ? loginSchema : registerSchema),
-    // defaultValues
-    defaultValues: isLogin
-      ? { email: "", password: "" }
-      : { name: "", email: "", password: "", confirmPassword: "" },
-    // mode
-    mode: "onChange" as const,
-  };
-  const form = useForm<LoginData | RegisterData>(config);
+    <Button
+      asChild
+      size="lg"
+      variant="destructive"
+      className="w-fit px-8 rounded-full font-semibold hover:opacity-80"
+    >
+      <Link href="/products">Discover</Link>
+    </Button>
+  </section>
+);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export default Home;
 
-  const onSubmit = async (values: LoginData | RegisterData) => {
-    // console.log(values)
-    const options = { position: "top-center" } as const;
-    try {
-      setIsSubmitting(true);
-      let resolved = false;
-      if (isLogin) {
-        const { success, rateLimit, message } = await loginAction(
-          values as LoginData,
-        );
-        if (success) resolved = true;
-        if (rateLimit) {
-          toast.error(message, options);
-          return; // stop here
-        }
-        success
-          ? toast.success(message, options)
-          : toast.error(message, options);
-      } else {
-        const { success, message } = await registerAction(
-          values as RegisterData,
-        );
-        if (success) resolved = true;
-        success
-          ? toast.success(message, options)
-          : toast.error(message, options);
-      }
+========================================
 
-      if (resolved) {
-        const safeRedirects = ["/products"];
-        const redirectTo = searchParams.get("redirect");
+FILE: app/not-found.tsx
+----------------------------------------
+/* global error */
+// app/not-found.tsx
 
-        router.replace(
-          redirectTo && safeRedirects.includes(redirectTo) ? redirectTo : "/",
-        );
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+const NotFound = () => (
+  <div className="p-24 text-center text-fuchsia-500 ">
+    <h1>page / route Not Found</h1>
+  </div>
+);
+
+export default NotFound;
+
+========================================
+
+FILE: app/(shop)/products/page.tsx
+----------------------------------------
+import { Product } from "@/features/products/server";
+import { ProductCard } from "@/features/products/server";
+import { fetchProducts } from "@/features/products/server";
+
+const Products = async () => {
+  const products = await fetchProducts();
 
   return (
-    <Card className="max-w-sm mx-auto ">
-      <CardHeader>
-        <CardTitle>{isLogin ? "Login" : "Create account"}</CardTitle>
-      </CardHeader>
+    <section className="max-w-6xl mx-auto mt-16 px-6 flex flex-col gap-10">
+      <header className="text-center flex flex-col gap-2">
+        <span className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
+          Our Collection
+        </span>
+        <h1 className="text-3xl font-bold text-gray-900">Products</h1>
+      </header>
 
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={isLogin ? "login" : "register"}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="space-y-4"
-              >
-                {!isLogin && (
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Input placeholder="Name" {...field} />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Input type="email" placeholder="Email" {...field} />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Input
-                        type="password"
-                        placeholder="Password"
-                        {...field}
-                      />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {!isLogin && (
-                  <FormField
-                    control={form.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Input
-                          type="password"
-                          placeholder="Confirm Password"
-                          {...field}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
-            <Button className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <Loader2 className="animate-spin" />
-              ) : isLogin ? (
-                "Sign in"
-              ) : (
-                "Sign up"
-              )}
-            </Button>
-
-            <p className="text-sm text-center text-muted-foreground">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-              <Link
-                href={{
-                  pathname: isLogin ? "/register" : "/login",
-                  query: Object.fromEntries(searchParams),
-                }}
-                className="font-medium text-primary hover:underline"
-              >
-                {isLogin ? "Sign up" : "Sign in"}
-              </Link>
-            </p>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+      <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-sm md:max-w-none mx-auto w-full">
+        {products.products.map((p: Product) => (
+          <ProductCard p={p} key={p.id} />
+        ))}
+      </ul>
+    </section>
   );
 };
 
-export { AuthForm };
+export const revalidate = 60; // revalidate every 60 seconds
+export default Products;
 
 ========================================
 
-FILE: features/auth/session.helpers.ts
+FILE: app/(shop)/products/loading.tsx
 ----------------------------------------
-import { randomUUID } from "crypto";
-import { Session } from "./types/session";
+import { Skeleton } from "@/components/ui/skeleton";
 
-/* session.helpers.ts → build session object + validate
-db/session.ts         → read/write storage
-service.ts            → orchestrate (calls helpers + db)
-actions.ts            → entry point (cookies, rate limit, call service) */
+const Loading = () => {
+  return (
+    <section className="max-w-6xl mx-auto mt-16 px-6 flex flex-col gap-10">
+      <header className="text-center flex flex-col gap-2">
+        <Skeleton className="h-3 w-24 mx-auto" />
+        <Skeleton className="h-8 w-36 mx-auto" />
+      </header>
 
-const createSession = (userId: string) => {
-  /* this func need try catch ? hmmm
-  no i remember some one tell me before "don’t over-engineer" */
+      <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-sm md:max-w-none mx-auto w-full">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <li
+            key={i}
+            className="border border-gray-100 rounded-2xl shadow-sm bg-white overflow-hidden flex flex-col"
+          >
+            {/* Image skeleton */}
+            <Skeleton className="w-full aspect-16/12" />
 
-  // session
-  const createdAt = new Date();
-  const session = {
-    sessionId: randomUUID(),
-    userId,
-    createdAt: createdAt.toISOString(),
-    expiresAt: new Date(
-      createdAt.getTime() + 1000 * 60 * 60 * 24 * 3, // 3 days
-      // createdAt.getTime() + 1000 * 60, // 60s for test
-    ).toISOString(),
-  };
-  return session;
+            {/* Info skeleton */}
+            <div className="flex flex-col gap-4 px-4 pb-4 pt-4">
+              <div className="flex items-start justify-between gap-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-12" />
+              </div>
+              <div className="flex justify-end">
+                <Skeleton className="h-8 w-20 rounded-full" />
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 };
 
-const getUserFromSession = (session: Session) => {
-  if (!session) return null;
-  return session.userId;
-};
-
-const destroySession = () => {
-  return;
-  // delete should be in db layer only
-  // just pass it 👉 Actual delete → in actions using DB
-};
-
-const isSessionValid = (session: Session) => {
-  if (!session) return false;
-  return new Date(session.expiresAt) > new Date();
-};
-
-export { createSession, getUserFromSession, destroySession, isSessionValid };
+export default Loading;
 
 ========================================
 
-FILE: features/auth/schema.ts
+FILE: app/(shop)/products/[id]/not-found.tsx
 ----------------------------------------
-import { z } from "zod";
+/* products/:id err */
 
-const loginSchema = z.object({
-  email: z.string().email("invalid email").trim().toLowerCase(),
-  password: z.string().min(8).trim(),
-});
-const registerSchema = z
-  .object({
-    name: z.string().min(5),
-    email: z.string().email("invalid email").trim().toLowerCase(),
-    password: z.string().min(8).trim(),
-    confirmPassword: z.string().min(8).trim(),
-  })
-  .refine((obj) => obj.password === obj.confirmPassword, {
-    message: "Passwords must match",
-    path: ["confirmPassword"],
-  });
-type LoginData = z.infer<typeof loginSchema>;
-type RegisterData = z.infer<typeof registerSchema>;
+const NotFound = () => (
+  <section className="max-w-5xl mx-auto mt-16 px-6 pb-16 flex flex-col items-center justify-center gap-4 text-center">
+    <span className="text-6xl">🔍</span>
+    <h1 className="text-3xl font-bold text-gray-900">Product Not Found</h1>
+    <p className="text-gray-500 text-base">
+      The product you're looking for doesn't exist or has been removed.
+    </p>
+  </section>
+);
 
-export { loginSchema, registerSchema };
-export type { LoginData, RegisterData };
+export default NotFound;
 
 ========================================
 
-FILE: features/auth/guard.ts
+FILE: app/(shop)/products/[id]/page.tsx
 ----------------------------------------
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { getSession, deleteSession } from "./db/session";
-import { isSessionValid } from "./session.helpers";
-import { hashSessionId } from "./service";
+import Image from "next/image";
+import { ClientAddToCart } from "@/features/cart";
+import { Carousel } from "@/components/ui/carousel";
+import { fetchProductById } from "@/features/products/server";
+import { CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
-/* 
-actions.ts      → entry point
-service.ts      → business logic
-db/*.ts         → persistence
-session.helpers → session logic
-guard.ts        → authorization
-*/
+interface ProductDetailsProps {
+  params: Promise<{ id: string }>;
+}
 
-const requireUser = async (redirectTo: string) => {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("sessionId")?.value;
+const ProductDetails = async ({ params }: ProductDetailsProps) => {
+  const id = await params.then((obj) => Number(obj.id));
 
-  if (!sessionId) redirect(`/login?redirect=${redirectTo}`);
+  const product = await fetchProductById(id);
 
-  const session = await getSession(hashSessionId(sessionId));
-  if (!session) {
-    cookieStore.delete("sessionId");
-    redirect(`/login?redirect=${redirectTo}`);
+  // console.log(`*** ${JSON.stringify(product)} ***`);
+
+  return (
+    <section className="max-w-5xl mx-auto mt-16 px-6 pb-16">
+      <article className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Title */}
+        <h1 className="md:col-span-2 text-3xl font-bold text-gray-900 text-center">
+          {product.title}
+        </h1>
+
+        {/* Carousel */}
+        <Carousel className="flex items-center justify-center">
+          <CarouselContent>
+            {product.images.map((current, i) => (
+              <CarouselItem key={i}>
+                <Image
+                  src={current}
+                  alt={product.title}
+                  width={300}
+                  height={300}
+                  className="object-cover mx-auto rounded-xl"
+                  sizes="(max-width: 768px) 100vw, 300px"
+                />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
+
+        {/* Description */}
+        <p className="text-gray-500 text-base leading-relaxed self-center">
+          {product.description}
+        </p>
+
+        {/* actions */}
+        <div className="md:col-span-2 bg-gray-50 border border-gray-100 p-4 rounded-2xl">
+          {/* ithink form should used here */}
+          <ClientAddToCart productId={id} />
+        </div>
+
+        {/* Stats */}
+        <div className="md:col-span-2 border-y border-gray-100 py-5">
+          <ul className="flex flex-col md:flex-row items-center md:justify-around gap-3 text-sm text-gray-600">
+            <li className="flex flex-col items-center gap-1">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                Rating
+              </span>
+              <span className="font-semibold text-gray-900">
+                {product.rating}
+              </span>
+            </li>
+            <li className="flex flex-col items-center gap-1">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                Stock
+              </span>
+              <span className="font-semibold text-gray-900">
+                {product.stock}
+              </span>
+            </li>
+            <li className="flex flex-col items-center gap-1">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                Category
+              </span>
+              <span className="font-semibold text-gray-900">
+                {product.category}
+              </span>
+            </li>
+            <li className="flex flex-col items-center gap-1">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                Brand
+              </span>
+              <span className="font-semibold text-gray-900">
+                {product.brand}
+              </span>
+            </li>
+            <li className="flex flex-col items-center gap-1">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                Discount
+              </span>
+              <span className="font-semibold text-emerald-600">
+                {product.discountPercentage}%
+              </span>
+            </li>
+            <li className="flex flex-col items-center gap-1">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                Price
+              </span>
+              <span className="font-semibold text-emerald-600">
+                ${product.price}
+              </span>
+            </li>
+          </ul>
+        </div>
+      </article>
+    </section>
+  );
+};
+
+export const revalidate = 60;
+export default ProductDetails;
+
+========================================
+
+FILE: app/(shop)/products/[id]/loading.tsx
+----------------------------------------
+import { Skeleton } from "@/components/ui/skeleton";
+
+const Loading = () => {
+  return (
+    <section className="max-w-5xl mx-auto mt-16 px-6 pb-16">
+      <article className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Title */}
+        <Skeleton className="h-9 w-1/2 mx-auto md:col-span-2" />
+
+        {/* Carousel */}
+        <div className="flex items-center justify-center">
+          <Skeleton className="h-75 w-75 rounded-xl" />
+        </div>
+
+        {/* Description */}
+        <div className="self-center space-y-2">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-4/6" />
+        </div>
+
+        {/* Actions */}
+        <div className="md:col-span-2 bg-gray-50 border border-gray-100 p-4 rounded-2xl">
+          <Skeleton className="h-10 w-40 mx-auto" />
+        </div>
+
+        {/* Stats */}
+        <div className="md:col-span-2 border-y border-gray-100 py-5">
+          <div className="flex flex-col md:flex-row items-center md:justify-around gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex flex-col items-center gap-1">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-4 w-12" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </article>
+    </section>
+  );
+};
+
+export default Loading;
+
+========================================
+
+FILE: app/(shop)/layout.tsx
+----------------------------------------
+import { CartDialog } from "@/features/cart";
+
+const ShopLayout = async ({ children }: { children: React.ReactNode }) => {
+  return (
+    <>
+      <CartDialog /> {children}
+    </>
+  );
+};
+
+export default ShopLayout;
+
+========================================
+
+FILE: app/error.tsx
+----------------------------------------
+"use client";
+
+const Err = () => (
+  <div className="p-24 text-center text-fuchsia-500 ">
+    <h1>something went wrong! (global error) </h1>
+  </div>
+);
+
+export default Err;
+
+========================================
+
+FILE: app/globals.css
+----------------------------------------
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --radius-md: calc(var(--radius) - 2px);
+
+  --radius-lg: var(--radius);
+
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --radius-3xl: calc(var(--radius) + 12px);
+
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  --color-background: var(--background);
+
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+
+  --color-border: var(--border);
+
+  --color-input: var(--input);
+
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+
+  --color-chart-2: var(--chart-2);
+
+  --color-chart-3: var(--chart-3);
+
+  --color-chart-4: var(--chart-4);
+
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+
+  --color-sidebar-foreground: var(--sidebar-foreground);
+
+  --color-sidebar-primary: var(--sidebar-primary);
+
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+
+  --color-sidebar-accent: var(--sidebar-accent);
+
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+
+  --color-sidebar-border: var(--sidebar-border);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  --background: oklch(1 0 0);
+
+  --foreground: oklch(0.145 0 0);
+
+  --card: oklch(1 0 0);
+
+  --card-foreground: oklch(0.145 0 0);
+
+  --popover: oklch(1 0 0);
+
+  --popover-foreground: oklch(0.145 0 0);
+
+  --primary: oklch(0.205 0 0);
+
+  --primary-foreground: oklch(0.985 0 0);
+
+  --secondary: oklch(0.97 0 0);
+
+  --secondary-foreground: oklch(0.205 0 0);
+
+  --muted: oklch(0.97 0 0);
+
+  --muted-foreground: oklch(0.556 0 0);
+
+  --accent: oklch(0.97 0 0);
+
+  --accent-foreground: oklch(0.205 0 0);
+
+  --destructive: oklch(0.577 0.245 27.325);
+
+  --border: oklch(0.922 0 0);
+
+  --input: oklch(0.922 0 0);
+
+  --ring: oklch(0.708 0 0);
+
+  --chart-1: oklch(0.646 0.222 41.116);
+
+  --chart-2: oklch(0.6 0.118 184.704);
+
+  --chart-3: oklch(0.398 0.07 227.392);
+
+  --chart-4: oklch(0.828 0.189 84.429);
+
+  --chart-5: oklch(0.769 0.188 70.08);
+
+  --sidebar: oklch(0.985 0 0);
+
+  --sidebar-foreground: oklch(0.145 0 0);
+
+  --sidebar-primary: oklch(0.205 0 0);
+
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+
+  --sidebar-accent: oklch(0.97 0 0);
+
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+
+  --sidebar-border: oklch(0.922 0 0);
+
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+
+  --foreground: oklch(0.985 0 0);
+
+  --card: oklch(0.205 0 0);
+
+  --card-foreground: oklch(0.985 0 0);
+
+  --popover: oklch(0.205 0 0);
+
+  --popover-foreground: oklch(0.985 0 0);
+
+  --primary: oklch(0.922 0 0);
+
+  --primary-foreground: oklch(0.205 0 0);
+
+  --secondary: oklch(0.269 0 0);
+
+  --secondary-foreground: oklch(0.985 0 0);
+
+  --muted: oklch(0.269 0 0);
+
+  --muted-foreground: oklch(0.708 0 0);
+
+  --accent: oklch(0.269 0 0);
+
+  --accent-foreground: oklch(0.985 0 0);
+
+  --destructive: oklch(0.704 0.191 22.216);
+
+  --border: oklch(1 0 0 / 10%);
+
+  --input: oklch(1 0 0 / 15%);
+
+  --ring: oklch(0.556 0 0);
+
+  --chart-1: oklch(0.488 0.243 264.376);
+
+  --chart-2: oklch(0.696 0.17 162.48);
+
+  --chart-3: oklch(0.769 0.188 70.08);
+
+  --chart-4: oklch(0.627 0.265 303.9);
+
+  --chart-5: oklch(0.645 0.246 16.439);
+
+  --sidebar: oklch(0.205 0 0);
+
+  --sidebar-foreground: oklch(0.985 0 0);
+
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+
+  --sidebar-accent: oklch(0.269 0 0);
+
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+
+  --sidebar-border: oklch(1 0 0 / 10%);
+
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    box-sizing: border-box;
   }
 
-  const isValid = isSessionValid(session);
-
-  if (!isValid) {
-    await deleteSession(hashSessionId(sessionId));
-    cookieStore.delete("sessionId");
-    redirect(`/login?redirect=${redirectTo}`);
+  body {
+    @apply m-0 p-0 bg-background text-foreground;
   }
-
-  return session.userId;
-};
-
-export { requireUser };
+}
 
 ========================================
 
-FILE: features/auth/server.ts
+FILE: app/(auth)/login/page.tsx
 ----------------------------------------
-// export server comps
-export { requireUser } from "./guard";
-export { getSession } from "./db/session";
-export { hashSessionId } from "./service";
-export { isSessionValid } from "./session.helpers";
+import { Metadata } from "next";
+import { AuthForm } from "@/features/auth";
 
-/* 
-hint:
-'getSession' is low level func
-rule: dont export low lvl func
-so 'getSession' exported temporarily
+export const metadata: Metadata = { title: "Login" };
 
-in future i think the session should be fetched from redis
-*/
+const LoginPage = () => (
+  <div className="flex min-h-screen items-center justify-center p-4">
+    <AuthForm type="login" />
+  </div>
+);
+
+export default LoginPage;
 
 ========================================
 
-FILE: features/auth/actions.ts
+FILE: app/(auth)/register/page.tsx
 ----------------------------------------
-"use server";
+import { Metadata } from "next";
+import { AuthForm } from "@/features/auth";
 
-import { redis } from "@/lib/redis";
-import { hashSessionId } from "./service";
-import { cookies, headers } from "next/headers";
-import { getCartIdByUserId } from "../cart/server";
-import { LoginData, RegisterData } from "./schema";
-import { login, logout, register } from "./service";
-import { getUserIdBySessionId } from "./db/session";
-import { registerSchema, loginSchema } from "./schema";
+export const metadata: Metadata = { title: "Register" };
 
-const cookieOptions: Parameters<Awaited<ReturnType<typeof cookies>>["set"]>[2] =
-  {
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 3,
-    // maxAge: 60,
-  };
+const RegisterPage = () => (
+  <div className="flex min-h-screen items-center justify-center p-4">
+    <AuthForm type="register" />
+  </div>
+);
 
-const loginAction = async (data: LoginData) => {
-  try {
-    // server validation
-    const values = loginSchema.parse(data);
-    const { email, password } = values;
+export default RegisterPage;
 
-    // rate limiter
+========================================
 
-    const h = await headers();
-    const ip =
-      h.get("x-forwarded-for")?.split(",")[0] ||
-      h.get("x-real-ip") ||
-      "unknown";
-    const key = `login:${ip}:${email}`;
+FILE: app/layout.tsx
+----------------------------------------
+import "./globals.css";
+import { Roboto } from "next/font/google";
+import { Header } from "@/components/layout/Header";
+import { Toaster } from "@/components/ui/sonner";
 
-    const attempts = await redis.incr(key);
-    if (attempts === 1) await redis.expire(key, 900); // 15 min
-    if (attempts > 5)
-      return {
-        success: false,
-        message: "Too many login attempts. Try again later.",
-        rateLimit: true,
-      };
+const roboto = Roboto({ subsets: ["latin"], weight: ["400", "700"] });
 
-    // login
-    const { sessionId } = await login(email, password);
-    if (sessionId) {
-      const store = await cookies();
-      store.set("sessionId", sessionId, cookieOptions);
+const RootLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <html lang="en">
+      <body className={`min-h-screen flex flex-col ${roboto.className}`}>
+        <Header />
+        <main className="flex-1">{children}</main>
 
-      // load cart
-      const userId = await getUserIdBySessionId(hashSessionId(sessionId));
-      if (userId) {
-        const cartId = await getCartIdByUserId(userId);
-        if (cartId) {
-          store.set("cart", cartId, cookieOptions);
-        }
-      }
-      await redis.del(key);
-      return { success: true, message: "Logged in", rateLimit: false };
-    } else return { success: false, message: "Login failed", rateLimit: false };
-  } catch {
-    return { success: false, message: "Login failed", rateLimit: false };
-  }
+        <footer className="flex h-14 border border-gray-200 items-center justify-center relative bottom-0 w-full mt-10">
+          <p>learn next js</p>
+        </footer>
+        <Toaster richColors theme="light" />
+      </body>
+    </html>
+  );
 };
 
-const registerAction = async (data: RegisterData) => {
-  try {
-    const values = registerSchema.parse(data);
-    const { email, password, name } = values;
-
-    const { sessionId, userId } = await register(email, password, name);
-
-    // console.log({sessionId, userId})
-
-    if (sessionId && userId) {
-      const store = await cookies();
-      store.set("sessionId", sessionId, cookieOptions);
-      return { success: true, message: "Account created" };
-    }
-    return { success: false, message: "Something went wrong" };
-  } catch (err: any) {
-    return { success: false, message: err.message };
-  }
-};
-
-const logoutAction = async () => {
-  try {
-    const store = await cookies();
-    const sessionId = store.get("sessionId");
-    const cartCookie = store.get("cart");
-
-    if (sessionId) {
-      await logout(sessionId.value); // rm from db
-      store.delete("sessionId");
-      if (cartCookie) store.delete("cart");
-      return { success: true, message: "Logged out" };
-    }
-  } catch {}
-
-  return { success: false, message: "Logout failed" };
-};
-
-export { loginAction, registerAction, logoutAction };
+export default RootLayout;
 
 ========================================
 
