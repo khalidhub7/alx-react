@@ -56,5 +56,3 @@ echo "{}" > storage/cart/userCartIndex.json
 # make files untracked by git
 git rm --cached dump.rdb ../dump.txt
 
-# lint
-npm run lint -- --fix app/\(auth\)/login/page.tsx
