@@ -1,3 +1,6 @@
+# Update packages
+sudo apt update && sudo apt upgrade -y
+
 # setup nextJs
 npx create-next-app@latest app-basics
 
@@ -56,3 +59,18 @@ echo "{}" > storage/cart/userCartIndex.json
 # make files untracked by git
 git rm --cached dump.rdb ../dump.txt
 
+npm run build && npm run start
+
+# cron job
+which cron
+sudo apt install cron # if not installed
+sudo service cron start
+sudo service cron status
+EDITOR=vim crontab -e  # edit/create jobs with vi
+crontab -l  # list all jobs
+crontab -r  # delete all jobs (careful)
+# add that line to job file
+# weekly (Sunday 3 AM)
+0 3 * * 0 cd /path-to-your-project && /npm-path run cleanup-sessions
+# replace placeholders with real paths
+pwd && which npm

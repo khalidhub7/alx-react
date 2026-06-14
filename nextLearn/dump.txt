@@ -1,656 +1,74 @@
-]633;E;find app -type f;d245963f-63e9-47bf-9016-bf9616a39643]633;CFILE: app/(public)/about/page.tsx
+]633;E;for file in features/auth/server.ts features/auth/cleanup.ts features/auth/index.ts;f4492082-12d2-46eb-bb70-060f3e41bc85]633;CFILE: features/auth/server.ts
 ----------------------------------------
-const About = () => (
-  <section className="max-w-2xl mx-auto mt-16 px-6 py-12 rounded-2xl border border-gray-100 shadow-sm text-center flex flex-col gap-6 bg-white">
-    <header className="flex flex-col gap-2">
-      <span className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
-        Who we are
-      </span>
-      <h1 className="text-3xl font-bold text-gray-900">About Us</h1>
-    </header>
+// export server comps
+import "server-only";
 
-    <p className="text-gray-500 text-base leading-relaxed">
-      We are an online store that sells high-quality electronic products like
-      phones, laptops, accessories, and smart devices. Our goal is to offer
-      reliable products at fair prices with fast delivery and friendly support.
-      We focus on quality, simplicity, and customer satisfaction.
-    </p>
-  </section>
-);
 
-export default About;
+export { hashSessionId } from "./service";
+export { logoutAction } from "./actions";
+export { cleanupSessions } from "./cleanup";
+export { isSessionValid } from "./session.helpers";
+export { requireUser, getCurrentUserId } from "./guard";
+export { deleteSession, getAllSessions } from "./db/session";
+
+/* 
+hint:
+'getSession' is low level func
+rule: dont export low lvl func
+so 'getSession' exported temporarily
+
+in future i think the session should be fetched from redis
+*/
 
 ========================================
 
-FILE: app/(public)/page.tsx
+FILE: features/auth/cleanup.ts
 ----------------------------------------
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+/* why scalable
 
-const Home = () => (
-  <section className="max-w-2xl mx-auto mt-24 px-8 py-16 rounded-2xl text-center flex flex-col items-center gap-8">
-    <h1 className="text-5xl font-bold tracking-tight text-gray-900 hover:scale-105 transition-transform duration-300">
-      GlowEssence
-    </h1>
+today:  cleanupSessions()
+        -> file DB
+later:  cleanupSessions()
+        -> mySQL
 
-    <p className="text-gray-500 text-lg leading-relaxed">
-      Elevate your beauty routine with everyday makeup essentials. From bold
-      lipsticks to smooth mascaras and versatile palettes, our products are
-      designed for quality, style, and confidence—at prices that fit your
-      routine.
-    </p>
 
-    <Button
-      asChild
-      size="lg"
-      variant="destructive"
-      className="w-fit px-8 rounded-full font-semibold hover:opacity-80"
-    >
-      <Link href="/products">Discover</Link>
-    </Button>
-  </section>
-);
+Delete sessions that are:
+- expired for 30+ days
+- revoked for 30+ days
+*/
 
-export default Home;
+import { getAllSessions } from "./server";
+import { deleteSession } from "./server";
 
-========================================
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-FILE: app/not-found.tsx
-----------------------------------------
-/* global error */
-// app/not-found.tsx
+const cleanupSessions = async () => {
+  // When moving to MySQL, you'll replace that part with a DB query.
+  const sessions = await getAllSessions();
 
-const NotFound = () => (
-  <div className="p-24 text-center text-fuchsia-500 ">
-    <h1>page / route Not Found</h1>
-  </div>
-);
+  for (const session of sessions) {
+    const oldExpired =
+      Date.now() > new Date(session.expiresAt).getTime() + SESSION_TTL_MS;
 
-export default NotFound;
+    const oldRevoked =
+      session.revokedAt != null &&
+      Date.now() > new Date(session.revokedAt).getTime() + SESSION_TTL_MS;
 
-========================================
-
-FILE: app/(shop)/products/page.tsx
-----------------------------------------
-import { Product } from "@/features/products/server";
-import { ProductCard } from "@/features/products/server";
-import { fetchProducts } from "@/features/products/server";
-
-const Products = async () => {
-  const products = await fetchProducts();
-
-  return (
-    <section className="max-w-6xl mx-auto mt-16 px-6 flex flex-col gap-10">
-      <header className="text-center flex flex-col gap-2">
-        <span className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
-          Our Collection
-        </span>
-        <h1 className="text-3xl font-bold text-gray-900">Products</h1>
-      </header>
-
-      <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-sm md:max-w-none mx-auto w-full">
-        {products.products.map((p: Product) => (
-          <ProductCard p={p} key={p.id} />
-        ))}
-      </ul>
-    </section>
-  );
-};
-
-export const revalidate = 60; // revalidate every 60 seconds
-export default Products;
-
-========================================
-
-FILE: app/(shop)/products/loading.tsx
-----------------------------------------
-import { Skeleton } from "@/components/ui/skeleton";
-
-const Loading = () => {
-  return (
-    <section className="max-w-6xl mx-auto mt-16 px-6 flex flex-col gap-10">
-      <header className="text-center flex flex-col gap-2">
-        <Skeleton className="h-3 w-24 mx-auto" />
-        <Skeleton className="h-8 w-36 mx-auto" />
-      </header>
-
-      <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-sm md:max-w-none mx-auto w-full">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <li
-            key={i}
-            className="border border-gray-100 rounded-2xl shadow-sm bg-white overflow-hidden flex flex-col"
-          >
-            {/* Image skeleton */}
-            <Skeleton className="w-full aspect-16/12" />
-
-            {/* Info skeleton */}
-            <div className="flex flex-col gap-4 px-4 pb-4 pt-4">
-              <div className="flex items-start justify-between gap-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-12" />
-              </div>
-              <div className="flex justify-end">
-                <Skeleton className="h-8 w-20 rounded-full" />
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-};
-
-export default Loading;
-
-========================================
-
-FILE: app/(shop)/products/[id]/not-found.tsx
-----------------------------------------
-/* products/:id err */
-
-const NotFound = () => (
-  <section className="max-w-5xl mx-auto mt-16 px-6 pb-16 flex flex-col items-center justify-center gap-4 text-center">
-    <span className="text-6xl">🔍</span>
-    <h1 className="text-3xl font-bold text-gray-900">Product Not Found</h1>
-    <p className="text-gray-500 text-base">
-      The product you're looking for doesn't exist or has been removed.
-    </p>
-  </section>
-);
-
-export default NotFound;
-
-========================================
-
-FILE: app/(shop)/products/[id]/page.tsx
-----------------------------------------
-import Image from "next/image";
-import { ClientAddToCart } from "@/features/cart";
-import { Carousel } from "@/components/ui/carousel";
-import { fetchProductById } from "@/features/products/server";
-import { CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-
-interface ProductDetailsProps {
-  params: Promise<{ id: string }>;
-}
-
-const ProductDetails = async ({ params }: ProductDetailsProps) => {
-  const id = await params.then((obj) => Number(obj.id));
-
-  const product = await fetchProductById(id);
-
-  // console.log(`*** ${JSON.stringify(product)} ***`);
-
-  return (
-    <section className="max-w-5xl mx-auto mt-16 px-6 pb-16">
-      <article className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Title */}
-        <h1 className="md:col-span-2 text-3xl font-bold text-gray-900 text-center">
-          {product.title}
-        </h1>
-
-        {/* Carousel */}
-        <Carousel className="flex items-center justify-center">
-          <CarouselContent>
-            {product.images.map((current, i) => (
-              <CarouselItem key={i}>
-                <Image
-                  src={current}
-                  alt={product.title}
-                  width={300}
-                  height={300}
-                  className="object-cover mx-auto rounded-xl"
-                  sizes="(max-width: 768px) 100vw, 300px"
-                />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious />
-          <CarouselNext />
-        </Carousel>
-
-        {/* Description */}
-        <p className="text-gray-500 text-base leading-relaxed self-center">
-          {product.description}
-        </p>
-
-        {/* actions */}
-        <div className="md:col-span-2 bg-gray-50 border border-gray-100 p-4 rounded-2xl">
-          {/* ithink form should used here */}
-          <ClientAddToCart productId={id} />
-        </div>
-
-        {/* Stats */}
-        <div className="md:col-span-2 border-y border-gray-100 py-5">
-          <ul className="flex flex-col md:flex-row items-center md:justify-around gap-3 text-sm text-gray-600">
-            <li className="flex flex-col items-center gap-1">
-              <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                Rating
-              </span>
-              <span className="font-semibold text-gray-900">
-                {product.rating}
-              </span>
-            </li>
-            <li className="flex flex-col items-center gap-1">
-              <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                Stock
-              </span>
-              <span className="font-semibold text-gray-900">
-                {product.stock}
-              </span>
-            </li>
-            <li className="flex flex-col items-center gap-1">
-              <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                Category
-              </span>
-              <span className="font-semibold text-gray-900">
-                {product.category}
-              </span>
-            </li>
-            <li className="flex flex-col items-center gap-1">
-              <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                Brand
-              </span>
-              <span className="font-semibold text-gray-900">
-                {product.brand}
-              </span>
-            </li>
-            <li className="flex flex-col items-center gap-1">
-              <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                Discount
-              </span>
-              <span className="font-semibold text-emerald-600">
-                {product.discountPercentage}%
-              </span>
-            </li>
-            <li className="flex flex-col items-center gap-1">
-              <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                Price
-              </span>
-              <span className="font-semibold text-emerald-600">
-                ${product.price}
-              </span>
-            </li>
-          </ul>
-        </div>
-      </article>
-    </section>
-  );
-};
-
-export const revalidate = 60;
-export default ProductDetails;
-
-========================================
-
-FILE: app/(shop)/products/[id]/loading.tsx
-----------------------------------------
-import { Skeleton } from "@/components/ui/skeleton";
-
-const Loading = () => {
-  return (
-    <section className="max-w-5xl mx-auto mt-16 px-6 pb-16">
-      <article className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Title */}
-        <Skeleton className="h-9 w-1/2 mx-auto md:col-span-2" />
-
-        {/* Carousel */}
-        <div className="flex items-center justify-center">
-          <Skeleton className="h-75 w-75 rounded-xl" />
-        </div>
-
-        {/* Description */}
-        <div className="self-center space-y-2">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-5/6" />
-          <Skeleton className="h-4 w-4/6" />
-        </div>
-
-        {/* Actions */}
-        <div className="md:col-span-2 bg-gray-50 border border-gray-100 p-4 rounded-2xl">
-          <Skeleton className="h-10 w-40 mx-auto" />
-        </div>
-
-        {/* Stats */}
-        <div className="md:col-span-2 border-y border-gray-100 py-5">
-          <div className="flex flex-col md:flex-row items-center md:justify-around gap-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-1">
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-4 w-12" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </article>
-    </section>
-  );
-};
-
-export default Loading;
-
-========================================
-
-FILE: app/(shop)/layout.tsx
-----------------------------------------
-import { CartDialog } from "@/features/cart";
-
-const ShopLayout = async ({ children }: { children: React.ReactNode }) => {
-  return (
-    <>
-      <CartDialog /> {children}
-    </>
-  );
-};
-
-export default ShopLayout;
-
-========================================
-
-FILE: app/error.tsx
-----------------------------------------
-"use client";
-
-const Err = () => (
-  <div className="p-24 text-center text-fuchsia-500 ">
-    <h1>something went wrong! (global error) </h1>
-  </div>
-);
-
-export default Err;
-
-========================================
-
-FILE: app/globals.css
-----------------------------------------
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-
-  --radius-md: calc(var(--radius) - 2px);
-
-  --radius-lg: var(--radius);
-
-  --radius-xl: calc(var(--radius) + 4px);
-
-  --radius-2xl: calc(var(--radius) + 8px);
-
-  --radius-3xl: calc(var(--radius) + 12px);
-
-  --radius-4xl: calc(var(--radius) + 16px);
-
-  --color-background: var(--background);
-
-  --color-foreground: var(--foreground);
-
-  --color-card: var(--card);
-
-  --color-card-foreground: var(--card-foreground);
-
-  --color-popover: var(--popover);
-
-  --color-popover-foreground: var(--popover-foreground);
-
-  --color-primary: var(--primary);
-
-  --color-primary-foreground: var(--primary-foreground);
-
-  --color-secondary: var(--secondary);
-
-  --color-secondary-foreground: var(--secondary-foreground);
-
-  --color-muted: var(--muted);
-
-  --color-muted-foreground: var(--muted-foreground);
-
-  --color-accent: var(--accent);
-
-  --color-accent-foreground: var(--accent-foreground);
-
-  --color-destructive: var(--destructive);
-
-  --color-border: var(--border);
-
-  --color-input: var(--input);
-
-  --color-ring: var(--ring);
-
-  --color-chart-1: var(--chart-1);
-
-  --color-chart-2: var(--chart-2);
-
-  --color-chart-3: var(--chart-3);
-
-  --color-chart-4: var(--chart-4);
-
-  --color-chart-5: var(--chart-5);
-
-  --color-sidebar: var(--sidebar);
-
-  --color-sidebar-foreground: var(--sidebar-foreground);
-
-  --color-sidebar-primary: var(--sidebar-primary);
-
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-
-  --color-sidebar-accent: var(--sidebar-accent);
-
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-
-  --color-sidebar-border: var(--sidebar-border);
-
-  --color-sidebar-ring: var(--sidebar-ring);
-}
-
-:root {
-  --radius: 0.625rem;
-
-  --background: oklch(1 0 0);
-
-  --foreground: oklch(0.145 0 0);
-
-  --card: oklch(1 0 0);
-
-  --card-foreground: oklch(0.145 0 0);
-
-  --popover: oklch(1 0 0);
-
-  --popover-foreground: oklch(0.145 0 0);
-
-  --primary: oklch(0.205 0 0);
-
-  --primary-foreground: oklch(0.985 0 0);
-
-  --secondary: oklch(0.97 0 0);
-
-  --secondary-foreground: oklch(0.205 0 0);
-
-  --muted: oklch(0.97 0 0);
-
-  --muted-foreground: oklch(0.556 0 0);
-
-  --accent: oklch(0.97 0 0);
-
-  --accent-foreground: oklch(0.205 0 0);
-
-  --destructive: oklch(0.577 0.245 27.325);
-
-  --border: oklch(0.922 0 0);
-
-  --input: oklch(0.922 0 0);
-
-  --ring: oklch(0.708 0 0);
-
-  --chart-1: oklch(0.646 0.222 41.116);
-
-  --chart-2: oklch(0.6 0.118 184.704);
-
-  --chart-3: oklch(0.398 0.07 227.392);
-
-  --chart-4: oklch(0.828 0.189 84.429);
-
-  --chart-5: oklch(0.769 0.188 70.08);
-
-  --sidebar: oklch(0.985 0 0);
-
-  --sidebar-foreground: oklch(0.145 0 0);
-
-  --sidebar-primary: oklch(0.205 0 0);
-
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-
-  --sidebar-accent: oklch(0.97 0 0);
-
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-
-  --sidebar-border: oklch(0.922 0 0);
-
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-
-  --foreground: oklch(0.985 0 0);
-
-  --card: oklch(0.205 0 0);
-
-  --card-foreground: oklch(0.985 0 0);
-
-  --popover: oklch(0.205 0 0);
-
-  --popover-foreground: oklch(0.985 0 0);
-
-  --primary: oklch(0.922 0 0);
-
-  --primary-foreground: oklch(0.205 0 0);
-
-  --secondary: oklch(0.269 0 0);
-
-  --secondary-foreground: oklch(0.985 0 0);
-
-  --muted: oklch(0.269 0 0);
-
-  --muted-foreground: oklch(0.708 0 0);
-
-  --accent: oklch(0.269 0 0);
-
-  --accent-foreground: oklch(0.985 0 0);
-
-  --destructive: oklch(0.704 0.191 22.216);
-
-  --border: oklch(1 0 0 / 10%);
-
-  --input: oklch(1 0 0 / 15%);
-
-  --ring: oklch(0.556 0 0);
-
-  --chart-1: oklch(0.488 0.243 264.376);
-
-  --chart-2: oklch(0.696 0.17 162.48);
-
-  --chart-3: oklch(0.769 0.188 70.08);
-
-  --chart-4: oklch(0.627 0.265 303.9);
-
-  --chart-5: oklch(0.645 0.246 16.439);
-
-  --sidebar: oklch(0.205 0 0);
-
-  --sidebar-foreground: oklch(0.985 0 0);
-
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-
-  --sidebar-accent: oklch(0.269 0 0);
-
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-
-  --sidebar-border: oklch(1 0 0 / 10%);
-
-  --sidebar-ring: oklch(0.556 0 0);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-    box-sizing: border-box;
+    if (oldRevoked || oldExpired) {
+      await deleteSession(session.sessionId);
+    }
   }
-
-  body {
-    @apply m-0 p-0 bg-background text-foreground;
-  }
-}
-
-========================================
-
-FILE: app/(auth)/login/page.tsx
-----------------------------------------
-import { Metadata } from "next";
-import { AuthForm } from "@/features/auth";
-
-export const metadata: Metadata = { title: "Login" };
-
-const LoginPage = () => (
-  <div className="flex min-h-screen items-center justify-center p-4">
-    <AuthForm type="login" />
-  </div>
-);
-
-export default LoginPage;
-
-========================================
-
-FILE: app/(auth)/register/page.tsx
-----------------------------------------
-import { Metadata } from "next";
-import { AuthForm } from "@/features/auth";
-
-export const metadata: Metadata = { title: "Register" };
-
-const RegisterPage = () => (
-  <div className="flex min-h-screen items-center justify-center p-4">
-    <AuthForm type="register" />
-  </div>
-);
-
-export default RegisterPage;
-
-========================================
-
-FILE: app/layout.tsx
-----------------------------------------
-import "./globals.css";
-import { Roboto } from "next/font/google";
-import { Header } from "@/components/layout/Header";
-import { Toaster } from "@/components/ui/sonner";
-
-const roboto = Roboto({ subsets: ["latin"], weight: ["400", "700"] });
-
-const RootLayout = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <html lang="en">
-      <body className={`min-h-screen flex flex-col ${roboto.className}`}>
-        <Header />
-        <main className="flex-1">{children}</main>
-
-        <footer className="flex h-14 border border-gray-200 items-center justify-center relative bottom-0 w-full mt-10">
-          <p>learn next js</p>
-        </footer>
-        <Toaster richColors theme="light" />
-      </body>
-    </html>
-  );
 };
 
-export default RootLayout;
+export { cleanupSessions };
+
+========================================
+
+FILE: features/auth/index.ts
+----------------------------------------
+// export client comps
+export { AuthForm } from "./components/AuthForm.client";
+export { AuthFormSkeleton } from "./components/AuthFormSkeleton";
 
 ========================================
 
