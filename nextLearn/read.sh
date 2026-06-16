@@ -74,3 +74,9 @@ crontab -r  # delete all jobs (careful)
 0 3 * * 0 cd /path-to-your-project && /npm-path run cleanup-sessions
 # replace placeholders with real paths
 pwd && which npm
+
+
+# ready to release, tag the last commit
+git add ../ && git commit -m "chore: prepare release v0.3.51" && \
+git tag -a v0.3.51 -m "Release v0.3.51" && git push origin main && \
+git push origin v0.3.51
