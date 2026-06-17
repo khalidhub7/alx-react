@@ -77,6 +77,8 @@ pwd && which npm
 
 
 # ready to release, tag the last commit
-git add ../ && git commit -m "chore: prepare release v0.3.51" && \
-git tag -a v0.3.51 -m "Release v0.3.51" && git push origin master && \
+git add . && \
+git commit -m "chore: prepare release v0.3.51" && \
+git tag -a v0.3.51 -m "Release v0.3.51" && \
+git push origin master && \
 git push origin v0.3.51
